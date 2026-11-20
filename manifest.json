@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.19-complet.2",
+  "version": "2026.11.20-test33.1",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -186,28 +186,10 @@
       "sha256": "9ddad02bcab1dc940745a0ce0472923f90610e0940f9d8d7775abab6b9ae4f27"
     },
     {
-      "path": "mods/VKA-Civilisations-26.3-0.2.1-alpha.1+nemesis-api.1.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.19-r2/VKA-Civilisations-26.3-0.2.1-alpha.1_nemesis-api.1.jar",
-      "size": 81719076,
-      "sha256": "25c8b6edeab40ae7ff6271b3f008ba1979cd99c7fa2e523f47e8065041973ab6"
-    },
-    {
-      "path": "mods/vka-compat-easynpc-3.0.1-pierre-eude.1.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.19-r2/vka-compat-easynpc-3.0.1-pierre-eude.1.jar",
-      "size": 18580,
-      "sha256": "c7aa4b7edeed9fb8fda4c836e9b0762d9b64a00f3e4a4d50f12611bb75dbe601"
-    },
-    {
-      "path": "mods/vka-nemesis-0.1.0-dev.1.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.19-r2/vka-nemesis-0.1.0-dev.1.jar",
-      "size": 262898,
-      "sha256": "db543dd0a2040ffeda03f926eb5075accac8bcce94bd8840e2ef57cc9d95488a"
-    },
-    {
-      "path": "mods/vka-nemesis-client-0.1.0-dev.1.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.19-r2/vka-nemesis-client-0.1.0-dev.1.jar",
-      "size": 23549,
-      "sha256": "e98383de20ec86d7735d03f58377969ef0ad51c74701c3edae6c9d422218833d"
+      "path": "mods/VKA-Unifie-26.3-TEST33-Correctif-Claims.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.20-test33/VKA-Unifie-26.3-TEST33-Correctif-Claims.jar",
+      "size": 105424113,
+      "sha256": "03980310345650486aaffa73f1a536ff6bdf60271a3a84eec2083c32aa30091b"
     },
     {
       "path": "mods/voicechat-fabric-2.6.24+26.3.jar",
