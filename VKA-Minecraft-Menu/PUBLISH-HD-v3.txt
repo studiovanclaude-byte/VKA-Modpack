@@ -1,0 +1,1 @@
+Déploiement VKA Menu 3D HD version 3 : illustration plein écran, 3 boutons pierre séparés, effets d'élévation/enfoncement, sans halo vert et suppression complète des anciennes bordures. Test GitHub Actions réussi : https://github.com/studiovanclaude-byte/VKA-Modpack/actions/runs/45021353385
