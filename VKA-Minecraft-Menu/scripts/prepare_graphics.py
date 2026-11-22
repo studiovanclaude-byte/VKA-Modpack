@@ -29,8 +29,8 @@ args = parser.parse_args()
 
 encoded = "".join(ART.read_text(encoding="ascii").split())
 source_bytes = base64.b64decode(encoded,validate=True)
-if len(source_bytes) != EXPECTED_WEBP_BYTES:
-    raise RuntimeError(f"Fichier image VKA incorrect : {len(source_bytes)}")
+if len(source_bytes) != EXPECTED_WEBP_BYTES or hashlib.sha256(source_bytes).hexdigest() != "d3a0a3b8e8080e2d69fea2cad6011d9afca0d6e65143416fdb10e7fcc0beec8b":
+    raise RuntimeError("Nouvelle image VKA incorrecte : taille ou SHA-256 différent")
 with Image.open(io.BytesIO(source_bytes)) as input_image:
     base = input_image.convert("RGB")
 if base.size != BASE:
