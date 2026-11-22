@@ -1,0 +1,83 @@
+name: Publication officielle VKA Luncher 0.3.4
+
+on:
+  push:
+    branches: [feature/vka-menu-3d-auto-install]
+    paths:
+      - '.github/workflows/publish-vka-launcher-0.3.4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-vka-luncher-0.3.4
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARCHIVE_URL: 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-05f4-81f4-9731-a940fc6973ec/raw?se=2026-11-22T14%3A50%3A25Z&sp=r&sv=2026-06-06&sr=b&scid=e67ff741-f399-56cd-b065-e5964db1a708&skoid=34268b52-5349-4f34-9be4-e38a5fb9f231&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-22T09%3A11%3A17Z&ske=2026-11-23T09%3A11%3A17Z&sks=b&skv=2026-06-06&sig=Tj93ghX2MbaL447QpD2vjyGCudqVwV9gkKy6glRZ4uI%3D'
+      ZIP_SHA: 43ad41f380c398601ccda0d7595a5f005f3a52aa3cc9fbe987c0fa50349755a1
+      INSTALLER_SHA: 0d38cb9de32b4dc1dfb979752fb94a4b731caf09a8ab6ea7ae7594ba0216074f
+      INSTALLER_SIZE: '120657342'
+      PUBLIC_TAG: vka-luncher-v0.3.4
+      INSTALLER_NAME: VKA Luncher Setup 0.3.4.exe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger le build officiel Windows validé
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 5 --silent --show-error \
+            --max-time 190 "$ARCHIVE_URL" -o /tmp/vka-0.3.4-windows.zip
+          echo "$ZIP_SHA  /tmp/vka-0.3.4-windows.zip" | sha256sum -c -
+          mkdir -p dist
+          unzip -p /tmp/vka-0.3.4-windows.zip "$INSTALLER_NAME" > "dist/$INSTALLER_NAME"
+          test "$(stat -c %s "dist/$INSTALLER_NAME")" = "$INSTALLER_SIZE"
+          echo "$INSTALLER_SHA  dist/$INSTALLER_NAME" | sha256sum -c -
+      - name: Préparer une Release privée et comparer l'empreinte GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$PUBLIC_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'La Release existe déjà : vérification stricte sans écrasement'
+          else
+            gh release create "$PUBLIC_TAG" "dist/$INSTALLER_NAME" \
+              --repo "$GITHUB_REPOSITORY" --target main --draft \
+              --title 'VKA Luncher 0.3.4 — accueil panoramique validé' \
+              --notes 'Mise à jour du logiciel VKA Luncher Windows. Bannière VKA agrandie avec logo visible, page d accueil rééquilibrée sans grand vide inférieur, menus Paramètres et Quitter conservés. Tests Electron et Windows réussis. Installateur non signé numériquement : SmartScreen peut afficher un avertissement.'
+          fi
+          verified=false
+          for i in 1 2 3 4 5 6 7 8; do
+            release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$PUBLIC_TAG")
+            asset=$(echo "$release" | jq -c --arg name "$INSTALLER_NAME" '.assets[] | select(.name==$name)')
+            test -n "$asset" || { echo 'Installateur absent dans Release';exit 1; }
+            size=$(echo "$asset" | jq -r .size)
+            digest=$(echo "$asset" | jq -r .digest)
+            test "$size" = "$INSTALLER_SIZE" || { echo 'Taille invalide';exit 1; }
+            if [ "$digest" = "sha256:$INSTALLER_SHA" ]; then verified=true; break; fi
+            sleep 3
+          done
+          if [ "$verified" != true ]; then
+            echo 'La somme SHA-256 publique ne correspond pas au build Windows';exit 1
+          fi
+          gh release edit "$PUBLIC_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$PUBLIC_TAG")
+          echo "$release" | jq -e '.draft==false and .prerelease==false' >/dev/null
+          echo "$release" | jq -r --arg name "$INSTALLER_NAME" \
+            '.assets[] | select(.name==$name) | .browser_download_url'
+          echo 'VERSION OFFICIELLE 0.3.4 DISPONIBLE SUR CANAL DE MISE A JOUR'
+      - name: Conserver preuve de publication (empreintes)
+        shell: bash
+        run: |
+          printf 'Release: %s\nTaille: %s octets\nSHA256: %s\n' \
+            "$PUBLIC_TAG" "$INSTALLER_SIZE" "$INSTALLER_SHA" > vka-launcher-release-check.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VKA-Launcher-0.3.4-Release-Audit
+          path: vka-launcher-release-check.txt
+          retention-days: 14
