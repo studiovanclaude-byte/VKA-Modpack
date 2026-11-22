@@ -51,6 +51,7 @@ jobs:
               src='assets/vkamenu/textures/gui/vka_menu_hd.png'
               assert src in members
               assert Image.open(io.BytesIO(jar.read(src))).size==(3344,1882)
+              assert Image.open(io.BytesIO(jar.read('assets/vkamenu/textures/gui/vka_stone_face.png'))).size==(1024,192)
               assert not any('vka_button_' in member for member in members), "Sprites collés non autorisés"
               assert 'fr/studiovanclaude/vka/menu/VkaMenuScreen.class' in members
           text=Path('src/client/java/fr/studiovanclaude/vka/menu/VkaMenuScreen.java').read_text()
@@ -58,6 +59,7 @@ jobs:
           assert 'g.text(this.font,CAPTIONS[index]' in text
           assert 'drawIcon(g,index' in text
           assert 'BUTTON_ART' not in text
+          assert 'vka_stone_face.png' in text
           for w,h in [(1920,1080),(2560,1080),(1280,1024),(3440,1440)]:
               scale=min(w/1672,h/941)
               ox=(w-1672*scale)/2
