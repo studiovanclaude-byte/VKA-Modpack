@@ -34,6 +34,8 @@ public final class VkaMenuScreen extends Screen {
     private static final String ADDRESS = "91.197.6.162:24508";
     private static final Identifier SCENE =
         Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_menu_hd.png");
+    private static final Identifier STONE =
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_stone_face.png");
 
     private static final String[] CAPTIONS = {
         "Rejoindre VKA", "Options et touches", "Quitter le jeu"
@@ -178,6 +180,11 @@ public final class VkaMenuScreen extends Screen {
             g.fillGradient(x+inset,cy0,x+w-inset,cy1,
                 lerpColor(0xFF626B65,0xFF777D76,hover),
                 lerpColor(0xFF373E3A,0xFF474F48,hover));
+            // La pierre de la FACE est une texture de matériau créée pour ce
+            // contrôle, pas une capture découpée de l'ancien menu.
+            g.blit(RenderPipelines.GUI_TEXTURED,STONE,
+                x+inset,cy0,0.0f,0.0f,x+w-inset*2,cy1-cy0,
+                1024,192,1024,192);
             g.fill(x+inset,cy0,x+w-inset,cy0+Math.max(1,px(2)),0x554D5A4E);
             int grain=Math.max(1,px(1));
             g.fill(x+inset+px(50),cy0+px(13),
