@@ -1,0 +1,147 @@
+name: VKA - Publier menu plein écran HD 3D et activer le manifeste
+
+on:
+  push:
+    branches:
+      - feature/vka-menu-3d-auto-install
+    paths:
+      - 'VKA-Minecraft-Menu/**'
+      - '.github/workflows/vka-menu-hd-publish.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vka-menu3d-hd-release
+  cancel-in-progress: false
+
+jobs:
+  publish-after-build:
+    # Publication uniquement sur un commit explicitement marqué après réussite du build de test.
+    if: contains(github.event.head_commit.message, '[publish-menu-v3]')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: VKA-Minecraft-Menu
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.0'
+      - name: Charger le visuel actuellement diffusé
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error --max-time 120 \
+            'https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu3d/VKA-Menu-3D-CLIENT-26.3-TEST-REEL.jar' \
+            --output existing-menu.jar
+          test -s existing-menu.jar
+      - name: Fabriquer l'image HD et les boutons 3D interactifs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pillow
+          python scripts/prepare_graphics.py \
+            --jar existing-menu.jar \
+            --output src/client/resources/assets/vkamenu/textures/gui
+      - name: Compiler avec les dépendances officielles Minecraft Fabric 26.3
+        run: gradle --no-daemon build --stacktrace
+      - name: Préparer et valider le nouveau JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          original=$(find build/libs -maxdepth 1 -name 'vka-menu-3d-client-*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' | head -1)
+          test -s "$original"
+          cp "$original" "VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+          python - <<'PY'
+          import io,zipfile
+          from PIL import Image
+          name="VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+          with zipfile.ZipFile(name) as f:
+              assets="assets/vkamenu/textures/gui/"
+              assert Image.open(io.BytesIO(f.read(assets+"vka_menu_hd.png"))).size==(3344,1882)
+              for num in range(3):
+                  assert assets+f"vka_button_{num}.png" in f.namelist()
+              assert "fr/studiovanclaude/vka/menu/VkaMenuScreen.class" in f.namelist()
+          print("Artefact vérifié",name)
+          PY
+          sha256sum "VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+          stat -c '%s bytes' "VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+      - name: Publier la nouvelle GitHub Release VKA (sans écraser V1)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag="v2026.11.22-vka-menu3d-hd-v3"
+          asset="VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release download "$tag" --pattern "$asset" --dir /tmp/vka-published
+            cmp "$asset" "/tmp/vka-published/$asset"
+          else
+            gh release create "$tag" "$asset" --target "$GITHUB_SHA" \
+              --title "VKA Menu 3D HD — plein écran et vrais boutons relief" \
+              --notes "Client Minecraft Fabric 26.3 : image plein écran 2x accentuée, boutons en pierre séparés avec élévation au survol et enfoncement au clic. Sans halo vert au survol. Mise à jour automatique via VKA Luncher."
+          fi
+      - name: Vérifier que le JAR publié est accessible et IDENTIQUE
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          url="https://github.com/${GH_REPO}/releases/download/v2026.11.22-vka-menu3d-hd-v3/VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+          curl --fail --location --retry 5 --retry-delay 3 --silent --show-error "$url" -o /tmp/vka-menu-v2-public.jar
+          cmp "VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar" /tmp/vka-menu-v2-public.jar
+          echo "Fichier publié et vérifié : $url"
+      - name: Activer la mise à jour du manifeste officiel UNIQUEMENT après vérification
+        shell: bash
+        run: |
+          set -euo pipefail
+          size=$(stat -c '%s' VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar)
+          sha=$(sha256sum VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar | cut -d' ' -f1)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git switch -C main origin/main
+          VKA_JAR_SIZE="$size" VKA_JAR_SHA="$sha" python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("../manifest.json")
+          obj=json.loads(p.read_text())
+          expected="mods/VKA-Menu-3D-CLIENT-26.3-HD-3D-v2.jar"
+          result="mods/VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar"
+          if obj["version"] not in ("2026.11.22-test-menu3d.2","2026.11.22-test-menu3d.3"):
+              raise SystemExit("Version modpack différente : publication automatique bloquée")
+          before=[x for x in obj["files"] if x["path"]==expected or x["path"]==result]
+          if len(before)!=1:
+              raise SystemExit(f"Entrée unique de menu attendue, trouvée {len(before)}")
+          record=before[0]
+          record.update({
+              "path":result,
+              "url":"https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu3d-hd-v3/VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar",
+              "size":int(os.environ["VKA_JAR_SIZE"]),
+              "sha256":os.environ["VKA_JAR_SHA"]
+          })
+          obj["version"]="2026.11.22-test-menu3d.3"
+          p.write_text(json.dumps(obj,ensure_ascii=False,indent=2)+"\n")
+          print("Manifeste v2", obj["version"],"taille",record["size"],"SHA",record["sha256"])
+          PY
+          git add ../manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "modpack: menu VKA HD 3D v2 automatiquement distribué"
+            git push origin main
+          fi
+      - name: Conserver l'artefact du build V3
+        uses: actions/upload-artifact@v4
+        with:
+          name: VKA-Menu-3D-HD-V3-PUBLICATION
+          path: VKA-Minecraft-Menu/VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar
+          if-no-files-found: error
+          retention-days: 30
