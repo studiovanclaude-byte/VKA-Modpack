@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.22-test-menu3d.7",
+  "version": "2026.11.22-test-menu3d.8",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -210,10 +210,10 @@
       "sha256": "2cd3cedde12121958bb3fc500b8cca3fecf6b9517287f74f00ab961531a546d8"
     },
     {
-      "path": "mods/VKA-Menu-3D-CLIENT-26.3-PANORAMA-v7.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu-panorama-v7/VKA-Menu-3D-CLIENT-26.3-PANORAMA-v7.jar",
-      "size": 13350535,
-      "sha256": "c170306ae4a9754992de6a2768df7b04943dcb48172c91a8eb15983b6f4d0df8"
+      "path": "mods/VKA-Menu-3D-CLIENT-26.3-PANORAMA-v8.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu-panorama-v8/VKA-Menu-3D-CLIENT-26.3-PANORAMA-v8.jar",
+      "size": 13074047,
+      "sha256": "2ca7dd2425957d4e154385ef1db15626b75c1c5da5c7aea2fe8dd639466dea4b"
     }
   ]
 }
