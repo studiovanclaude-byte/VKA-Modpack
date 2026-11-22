@@ -130,7 +130,7 @@ jobs:
           obj=json.loads(p.read_text())
           old='mods/VKA-Menu-3D-CLIENT-26.3-PANORAMA-v7.jar'
           new='mods/VKA-Menu-3D-CLIENT-26.3-PANORAMA-v8.jar'
-          if obj['version'] not in ('2026.11.22-test-menu3d.6','2026.11.22-test-menu3d.7'):
+          if obj['version'] not in ('2026.11.22-test-menu3d.7','2026.11.22-test-menu3d.8'):
               raise SystemExit('Manifeste modpack changé entre-temps : publication bloquée')
           matching=[x for x in obj['files'] if x['path'] in (old,new)]
           if len(matching)!=1:
@@ -142,7 +142,7 @@ jobs:
               'size':int(os.environ['VKA_JAR_SIZE']),
               'sha256':os.environ['VKA_JAR_SHA']
           })
-          obj['version']='2026.11.22-test-menu3d.7'
+          obj['version']='2026.11.22-test-menu3d.8'
           p.write_text(json.dumps(obj,ensure_ascii=False,indent=2)+'\n')
           print('VKA modpack:',obj['version'],entry['path'],entry['size'],entry['sha256'])
           PY
