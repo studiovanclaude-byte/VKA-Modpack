@@ -1,0 +1,46 @@
+name: Publier VKA unifié TEST33.4
+
+on:
+  push:
+    branches: [publication/test33.4]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v2026.11.22-test33.4
+      FICHIER: VKA-Unifie-26.3-TEST33.4-Nemesis-0.2.3.jar
+      SHA256: 133a7272f4c817925890a6cd8bd884d90e3dab01e3e6901a85ddf6ed1f73f62a
+      TAILLE: '105403038'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recoller et vérifier le jar (identique à celui du serveur)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat publication-test33.4/"$FICHIER".part* > "$FICHIER"
+          test "$(stat -c %s "$FICHIER")" = "$TAILLE"
+          echo "$SHA256  $FICHIER" | sha256sum -c -
+      - name: Publier la release (une seule fois)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG déjà publiée : rien à faire."
+          else
+            gh release create "$TAG" "$FICHIER" --target "$GITHUB_SHA" \
+              --title "VKA unifié TEST33.4 — Némésis 0.2.3" \
+              --notes "Jar identique à celui du serveur VKA depuis le 2026-11-22 21 h 35 (SHA-256 $SHA256). Correctif des clics accroupis, Némésis 0.2.3-sieges.4 (excursions sûres, golems, gardes personnels)."
+          fi
+      - name: Vérifier le fichier publié
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o verif.jar "https://github.com/${GH_REPO}/releases/download/${TAG}/${FICHIER}"
+          test "$(stat -c %s verif.jar)" = "$TAILLE"
+          echo "$SHA256  verif.jar" | sha256sum -c -
