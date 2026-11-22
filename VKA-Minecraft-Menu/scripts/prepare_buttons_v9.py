@@ -110,20 +110,25 @@ def icon(index):
         d.polygon([(39,28),(94,64),(39,98)],fill=(171,242,40,255))
         d.line([(39,29),(39,98)],fill=(231,255,145,255),width=5)
     elif index==1:
-        # Rounded metallic eight-toothed cog + central cut-out.
+        # Vrai engrenage à huit dents, pas un cercle plein.
         cx=cy=64
-        n=24
         pts=[]
-        for i in range(n):
-            theta=2*math.pi*i/n-math.pi/2
-            radius=46 if i%3!=2 else 36
-            pts.append((cx+radius*math.cos(theta),cy+radius*math.sin(theta)))
-        d.polygon(pts,fill=(15,20,19,255))
-        d.polygon([(cx+43*math.cos(2*math.pi*i/n-math.pi/2),
-                    cy+43*math.sin(2*math.pi*i/n-math.pi/2)) for i in range(n)],
-                  fill=(205,219,214,255))
-        d.ellipse((43,43,85,85),fill=(28,38,34,255),outline=(235,238,229,255),width=5)
-        d.ellipse((53,53,75,75),fill=(0,0,0,0))
+        for k in range(32):
+            theta=2*math.pi*k/32-math.pi/2
+            radius=49 if k%4 in (1,2) else 37
+            pts.append((cx+radius*math.cos(theta),
+                        cy+radius*math.sin(theta)))
+        d.polygon(pts,fill=(16,24,21,255))
+        inner=[]
+        for k in range(32):
+            theta=2*math.pi*k/32-math.pi/2
+            radius=45 if k%4 in (1,2) else 34
+            inner.append((cx+radius*math.cos(theta),
+                          cy+radius*math.sin(theta)))
+        d.polygon(inner,fill=(222,231,218,255))
+        d.ellipse((44,44,84,84),fill=(42,53,47,255),
+                  outline=(250,251,245,255),width=4)
+        d.ellipse((54,54,74,74),fill=(0,0,0,0))
     else:
         # Door and arrow. Explicitly independent from the background.
         d.rounded_rectangle((17,25,73,105),radius=7,outline=(219,229,217,255),width=9)
