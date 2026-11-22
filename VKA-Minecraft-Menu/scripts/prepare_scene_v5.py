@@ -50,3 +50,36 @@ destination=output/"vka_menu_hd.png"
 scene.save(destination,optimize=True)
 assert scene.size==(3344,1882)
 print("VKA v5: scene without UI widgets:",destination,scene.size,destination.stat().st_size)
+
+# Matière de pierre dédiée aux vraies faces 3D, créée indépendamment du
+# décor. Elle ne contient ni vieux bouton, ni cadre, ni libellé.
+import random
+rng=random.Random(1250)
+tile_w,tile_h=1024,192
+coarse=Image.new("L",(64,12))
+coarse.putdata([rng.randrange(55,190) for _ in range(64*12)])
+coarse=coarse.resize((tile_w,tile_h),Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(4.0))
+fine=Image.new("L",(tile_w,tile_h))
+fine.putdata([rng.randrange(60,195) for _ in range(tile_w*tile_h)])
+cdata=list(coarse.getdata())
+fdata=list(fine.getdata())
+stone=Image.new("RGB",(tile_w,tile_h))
+out=[]
+for index,(lo,hi) in enumerate(zip(cdata,fdata)):
+    y=index//tile_w
+    brightness=int((lo-128)*0.27+(hi-128)*0.20)
+    vignette=int(7*abs(y-tile_h/2)/(tile_h/2))
+    out.append(tuple(max(0,min(255,v+brightness-vignette)) for v in (61,71,65)))
+stone.putdata(out)
+draw=ImageDraw.Draw(stone,"RGB")
+for i in range(25):
+    x=rng.randrange(tile_w)
+    y=rng.randrange(10,tile_h-10)
+    span=rng.randrange(8,75)
+    draw.line((x,y,x+span,y+rng.randrange(-8,9)),fill=(45,53,47),width=1)
+for i in range(30):
+    x,y=rng.randrange(tile_w),rng.randrange(tile_h)
+    draw.point((x,y),fill=(129,140,124))
+stone.save(output/"vka_stone_face.png",optimize=True)
+print("VKA v5: procedural stone material:",stone.size)
+
