@@ -38,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check pillow
-          python scripts/prepare_scene_v6.py --output src/client/resources/assets/vkamenu/textures/gui
+          python scripts/prepare_scene_v5.py --output src/client/resources/assets/vkamenu/textures/gui
       - name: Compiler le mod Fabric sur Minecraft 26.3
         run: gradle --no-daemon build --stacktrace
       - name: Valider la géométrie des boutons et compiler le JAR de publication
