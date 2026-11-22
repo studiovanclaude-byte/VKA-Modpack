@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
- * VKA Menu v5 : des VRAIS contrôles rendus à l'exécution.
+ * VKA Menu v9 : contrôles en pierre biseautée RGBA indépendants.
  *
  * 1. Le décor ne fournit AUCUN bouton, texte ou icône d'interaction.
  * 2. Chaque bouton est construit à partir de faces géométriques (pierre,
@@ -34,8 +34,18 @@ public final class VkaMenuScreen extends Screen {
     private static final String ADDRESS = "91.197.6.162:24508";
     private static final Identifier SCENE =
         Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_menu_panorama.png");
-    private static final Identifier STONE =
-        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_stone_face.png");
+    // Sprites de pierre taillée indépendants, générés en RGBA transparent.
+    // Il ne s'agit PAS de rectangles extraits de l'ancienne illustration.
+    private static final Identifier[] BUTTON_STATES = {
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_button_normal.png"),
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_button_hover.png"),
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_button_pressed.png")
+    };
+    private static final Identifier[] ICONS = {
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_icon_0.png"),
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_icon_1.png"),
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_icon_2.png")
+    };
 
     private static final String[] CAPTIONS = {
         "Rejoindre VKA", "Options et touches", "Quitter le jeu"
@@ -133,123 +143,61 @@ public final class VkaMenuScreen extends Screen {
         for(int i=0;i<3;i++) drawButton(g,i);
     }
 
-    // Construction procédurale d'un vrai bouton graphique, JAMAIS un crop de l'illustration.
+    // VKA v9 : véritable bouton graphique autonome, avec texture alpha
+    // façonnée en biseau, relief, ombre et trois états. Aucun rectangle du
+    // décor n'est recopié ; le texte et les icônes restent séparés.
     private void drawButton(GuiGraphicsExtractor g,int index) {
         final int[] b=BUTTONS[index];
-        final int x=ox()+px(b[0]),baseY=oy()+px(b[1]),w=px(b[2]),h=px(b[3]);
-        if(w<16||h<14)return;
+        final int x=ox()+px(b[0]);
+        final int baseY=oy()+px(b[1]);
+        final int w=px(b[2]),h=px(b[3]);
+        if(w<24 || h<22)return;
+
         float hover=hoverProgress[index],down=pressProgress[index];
-        int rise=Math.round(-Math.max(2,px(7))*hover+Math.max(3,px(10))*down);
-        int depth=Math.max(4,px(12));
-        int y=baseY+rise;
-        int corner=Math.max(3,px(11));
-        int bevel=Math.max(2,px(5));
-        int bottom=y+h-depth;
-        int side=Math.max(2,px(7));
+        int lift=Math.round(-Math.max(1,px(3))*hover+Math.max(2,px(4))*down);
+        int y=baseY+lift;
+        Identifier art=down>0.45f?BUTTON_STATES[2]:
+            (hover>0.35f?BUTTON_STATES[1]:BUTTON_STATES[0]);
 
-        // Ombre portée liée à la hauteur réelle de la pierre.
-        g.fill(x+corner+side,baseY+h+Math.max(1,px(2)),
-            x+w-corner+side,baseY+h+Math.max(4,px(12)),0x96000100);
-        g.fill(x+corner,baseY+h,x+w-corner,baseY+h+Math.max(2,px(6)),0x92000805);
+        // Le PNG RGBA contient une VRAIE silhouette aux angles coupés.
+        // zéros alpha aux coins : fini les bavures rectangulaires.
+        // La largeur et la hauteur envoyées à blit restent toujours w,h.
+        g.blit(RenderPipelines.GUI_TEXTURED,art,
+            x,y,0.0f,0.0f,w,h,1540,206,1540,206);
 
-        // Une tranche réellement extrudée : sombre à gauche, arête claire à droite.
-        g.fill(x+corner,y+depth,x+w-corner,y+h,0xFF1D2826);
-        g.fill(x+corner+bevel,y+h-depth,x+w-corner-bevel,y+h-2,0xFF151C1C);
-        g.fill(x+w-side,y+depth,x+w-corner,y+h-2,0xFF414D48);
-        g.fill(x+corner+bevel,y+h-Math.max(3,px(5)),x+w-corner-bevel,y+h-2,0xFF0B1311);
+        // Pictogramme autonome haute résolution : triangle / engrenage /
+        // sortie. Sa position et celle du texte suivent le bouton 3D.
+        final int iconSize=Math.max(12,Math.round(h*0.55f));
+        final int iconX=x+Math.round(w*0.21f)-iconSize/2;
+        final int iconY=y+(h-iconSize)/2-Math.max(1,px(3));
+        g.blit(RenderPipelines.GUI_TEXTURED,ICONS[index],
+            iconX,iconY,0.0f,0.0f,iconSize,iconSize,128,128,128,128);
 
-        // Contour pierre taillée avec angles biseautés, face réellement flottante.
-        int faceBottom=y+h-depth;
-        int faceTop=y+bevel;
-        int edge=lerpColor(0xFF6E7973,0xFFA7ACA1,hover);
-        g.fill(x+corner,y,x+w-corner,faceTop,0xFFC1C6BD); // arête supérieure
-        g.fill(x+bevel,y+corner,x+w-bevel,faceBottom-corner,edge);
-        g.fill(x,y+corner,x+w,faceBottom-corner,0xFF313B37);
-        g.fill(x+corner,y+bevel,x+w-corner,faceBottom-bevel,0xFF36433E);
-
-        // Variations par bandes dans la roche, sans utiliser de texture découpée.
-        int inset=corner+Math.max(1,px(3));
-        int cy0=y+Math.max(bevel+1,px(15));
-        int cy1=faceBottom-Math.max(bevel+1,px(12));
-        if(cy1>cy0) {
-            g.fillGradient(x+inset,cy0,x+w-inset,cy1,
-                lerpColor(0xFF626B65,0xFF777D76,hover),
-                lerpColor(0xFF373E3A,0xFF474F48,hover));
-            // La pierre de la FACE est une texture de matériau créée pour ce
-            // contrôle, pas une capture découpée de l'ancien menu.
-            // IMPORTANT : blit prend une LARGEUR, pas une abscisse droite.
-            // Le précédent x+w-2*inset faisait déborder la pierre très
-            // loin à droite et recouvrait le décor.
-            int stoneWidth = Math.max(1, w - inset*2);
-            int stoneHeight = Math.max(1, cy1 - cy0);
-            g.blit(RenderPipelines.GUI_TEXTURED,STONE,
-                x+inset,cy0,0.0f,0.0f,stoneWidth,stoneHeight,
-                1024,192,1024,192);
-            g.fill(x+inset,cy0,x+w-inset,cy0+Math.max(1,px(2)),0x554D5A4E);
-            int grain=Math.max(1,px(1));
-            g.fill(x+inset+px(50),cy0+px(13),
-                x+w-inset-px(45),cy0+px(13)+grain,0x26383A32);
+        // Séparateur gravé dans le métal avec effet de profondeur.
+        int dividerX=x+Math.round(w*0.31f);
+        int dividerTop=y+Math.max(8,px(24));
+        int dividerBottom=y+h-Math.max(10,px(30));
+        if(dividerBottom>dividerTop){
+            g.fill(dividerX,dividerTop,dividerX+Math.max(1,px(3)),
+                dividerBottom,0xD00F1914);
+            g.fill(dividerX+Math.max(2,px(3)),dividerTop,
+                dividerX+Math.max(3,px(5)),dividerBottom,0xADCAD3C8);
         }
-        // Éclats métalliques du cadre et reflets haute lumière.
-        g.fill(x+corner,y,x+w-corner,y+Math.max(1,px(2)),0xFFE1E6DB);
-        g.fill(x+bevel,y+corner,x+bevel+Math.max(1,px(2)),faceBottom-corner,0xFFB8C1B2);
-        g.fill(x+w-bevel-Math.max(1,px(3)),y+corner,x+w-bevel,faceBottom-corner,0xFF141D1A);
-        g.fill(x+corner,faceBottom-bevel,x+w-corner,faceBottom,0xFF151F1A);
 
-        // Axe décoratif et pictogramme indépendants (pas inclus dans une image).
-        int iconX=x+Math.round(w*0.23f);
-        int iconY=y+Math.round((faceBottom-y)*0.53f);
-        int icon=Math.max(5,Math.min(h/5,px(26)));
-        g.fill(iconX+icon+px(22),y+Math.max(5,px(19)),
-            iconX+icon+px(23),faceBottom-Math.max(5,px(12)),0xFF0F1815);
-        g.fill(iconX+icon+px(24),y+Math.max(5,px(19)),
-            iconX+icon+px(25),faceBottom-Math.max(5,px(12)),0xFFA1A99C);
-        drawIcon(g,index,iconX,iconY,icon,hover);
-
-        // Le vrai texte est rasterisé par Minecraft, toujours net et lié au bouton.
+        // Le libellé n'est PAS peint dans la texture : rendu natif de la
+        // police Minecraft, déplaçable, net et actionnable avec le bouton.
         if(this.minecraft!=null) {
-            // Lisibilité : la police était trop petite par rapport à la
-            // hauteur réelle des pierres. Texte centré et taille augmentée.
-            float textScale=Math.max(1.35f,Math.min(4.0f,h/18.0f));
-            float centerX=x+w*0.63f;
-            float centerY=y+(faceBottom-y)*0.51f;
+            float textScale=Math.max(1.5f,Math.min(3.65f,h/22.0f));
+            float centerX=x+w*0.61f;
+            float centerY=y+h*0.455f;
             g.pose().pushMatrix();
             g.pose().translate(centerX,centerY);
             g.pose().scale(textScale,textScale);
             int halfText=this.font.width(CAPTIONS[index])/2;
-            g.text(this.font,CAPTIONS[index],-halfText,-this.font.lineHeight/2,
-                index==0?0xFFE6FFDF:0xFFFFFFFF,true);
+            g.text(this.font,CAPTIONS[index],
+                -halfText,-this.font.lineHeight/2,
+                index==0?0xFFF3FFE8:0xFFF0F2EC,true);
             g.pose().popMatrix();
-        }
-    }
-
-    private void drawIcon(GuiGraphicsExtractor g,int index,int cx,int cy,int size,float hover) {
-        int c=index==0?0xFFB5F134:0xFFE4E7DE;
-        int outline=0xFF101A15;
-        int unit=Math.max(1,size/5);
-        if(index==0) {
-            // Triangle relief, pointe décalée à droite.
-            for(int row=-size;row<=size;row+=Math.max(1,unit)) {
-                int width=Math.max(1,size-Math.abs(row));
-                g.fill(cx-size/3,cy+row,cx+width,cy+row+Math.max(1,unit),outline);
-                g.fill(cx-size/3+unit,cy+row,cx+width-unit,cy+row+Math.max(1,unit),c);
-            }
-        } else if(index==1) {
-            // Engrenage taillé : 8 dents + centre évidé.
-            int r=size/2;
-            g.fill(cx-r,cy-r,cx+r,cy+r,c);
-            g.fill(cx-size,cy-unit,cx+size,cy+unit,c);
-            g.fill(cx-unit,cy-size,cx+unit,cy+size,c);
-            g.fill(cx-r,cy-r,cx+r,cy+r,c);
-            g.fill(cx-r/2,cy-r/2,cx+r/2,cy+r/2,outline);
-        } else {
-            // Icône porte / sortie avec flèche autonome.
-            int r=Math.max(3,size/2);
-            g.fill(cx-r,cy-r,cx-r+unit,cy+r,c);
-            g.fill(cx-r,cy-r,cx+r/2,cy-r+unit,c);
-            g.fill(cx-r,cy+r-unit,cx+r/2,cy+r,c);
-            g.fill(cx-unit,cy-unit,cx+r,cy+unit,c);
-            g.fill(cx+r-unit,cy-2*unit,cx+r+unit,cy+2*unit,c);
         }
     }
 
