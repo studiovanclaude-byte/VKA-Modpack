@@ -65,6 +65,9 @@ jobs:
           assert 'draw3DButton' not in java
           assert 'private void drawButton' in java
           assert 'SimpleSoundInstance.forUI' in java
+          assert 'stoneWidth = Math.max(1, w - inset*2)' in java
+          assert 'x+w-inset*2' not in java
+          assert 'h/18.0f' in java
           print('Compilé: vrais contrôles VKA 3D, cadrage complet et son hover')
           PY
           sha256sum VKA-Menu-3D-CLIENT-26.3-REAL-3D-v6.jar
@@ -84,8 +87,8 @@ jobs:
             cmp "$file" "/tmp/vka-release/$file"
           else
             gh release create "$tag" "$file" --target "$GITHUB_SHA" \
-              --title 'VKA Menu v6 — boutons 3D independants et cadrage corrige' \
-              --notes 'Fabric Minecraft 26.3. Boutons interactifs dessines a l execution : pierre en relief, ombres, animation, texte et icones independants, sans rectangles decoupes. Cadrage conservant tout le logo VKA. Son au survol conserve.'
+              --title 'VKA Menu v6 — largeur des pierres corrigée et texte agrandi' \
+              --notes 'Fabric Minecraft 26.3. Correction du débordement de la texture des boutons, libellés agrandis, décors latéraux sans duplication, pierre sculptée interactive, son au survol conservé.'
           fi
       - name: Recontroler le JAR de Release
         shell: bash
@@ -131,7 +134,7 @@ jobs:
           PY
           git add ../manifest.json
           if ! git diff --cached --quiet; then
-            git commit -m 'modpack: VKA menu v6 boutons 3D natifs et cadrage complet'
+            git commit -m 'modpack: correctif VKA v6 des boutons trop larges et du texte'
             git push origin main
           fi
       - name: Conserver la compilation de validation
