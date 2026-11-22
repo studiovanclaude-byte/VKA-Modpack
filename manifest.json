@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.22-test33.4",
+  "version": "2026.11.22-test33.5",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -186,10 +186,10 @@
       "sha256": "9ddad02bcab1dc940745a0ce0472923f90610e0940f9d8d7775abab6b9ae4f27"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-TEST33.4-Nemesis-0.2.3.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-test33.4/VKA-Unifie-26.3-TEST33.4-Nemesis-0.2.3.jar",
-      "size": 105403038,
-      "sha256": "133a7272f4c817925890a6cd8bd884d90e3dab01e3e6901a85ddf6ed1f73f62a"
+      "path": "mods/VKA-Unifie-26.3-TEST33.5-Fortification.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-test33.5/VKA-Unifie-26.3-TEST33.5-Fortification.jar",
+      "size": 105428561,
+      "sha256": "c371df29126a1bd470f274d3b387bbd028c4f20fd694ce6db9e10fa426610a81"
     },
     {
       "path": "mods/voicechat-fabric-2.6.24+26.3.jar",
