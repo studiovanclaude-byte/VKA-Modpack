@@ -34,9 +34,9 @@ public final class VkaMenuScreen extends Screen {
         Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_button_2.png")
     };
     private static final int[][] BUTTONS = {
-        {450, 465, 748, 87},  // Rejoindre VKA
-        {450, 574, 748, 83},  // Options et touches
-        {450, 682, 748, 88}   // Quitter le jeu
+        {446, 459, 758, 104},  // Rejoindre VKA
+        {446, 566, 758, 103},  // Options et touches
+        {446, 676, 758, 102}   // Quitter le jeu
     };
 
     private static boolean joinedFromVka;
