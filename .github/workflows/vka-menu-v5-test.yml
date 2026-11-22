@@ -1,4 +1,4 @@
-name: VKA Menu v5 - vrais boutons 3D et cadrage integral
+name: VKA Menu v7 - panorama continu et vrais boutons 3D
 
 on:
   push:
@@ -26,65 +26,72 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.8.0'
-      - name: Construire uniquement le décor sans boutons collés
+      - name: Reconstruire le fond VKA original et son matériau de pierre
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check pillow
-          python scripts/prepare_scene_v5.py \
-            --output src/client/resources/assets/vkamenu/textures/gui
-      - name: Compiler Minecraft 26.3 et Fabric
+          python scripts/prepare_scene_v5.py --output src/client/resources/assets/vkamenu/textures/gui
+      - name: Générer le panorama continu depuis la nouvelle illustration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/prepare_panorama_v7.py --output src/client/resources/assets/vkamenu/textures/gui
+      - name: Compiler contre Minecraft Fabric 26.3
+        shell: bash
         run: gradle --no-daemon build --stacktrace
-      - name: Vérifier cadrage 16:9 21:9 4:3, texte natif et ressources
+      - name: Vérifier image, logo, boutons et ratios d'affichage
         shell: bash
         run: |
           set -euo pipefail
           jarfile=$(find build/libs -maxdepth 1 -name 'vka-menu-3d-client-*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' | head -1)
           test -s "$jarfile"
           python - "$jarfile" <<'PY'
-          import sys, zipfile, io
+          import sys,zipfile,io
           from pathlib import Path
-          from PIL import Image
+          from PIL import Image,ImageChops
           file=sys.argv[1]
           with zipfile.ZipFile(file) as jar:
               members=jar.namelist()
-              src='assets/vkamenu/textures/gui/vka_menu_hd.png'
-              assert src in members
-              assert Image.open(io.BytesIO(jar.read(src))).size==(3344,1882)
-              assert Image.open(io.BytesIO(jar.read('assets/vkamenu/textures/gui/vka_stone_face.png'))).size==(1024,192)
-              assert not any('vka_button_' in member for member in members), "Sprites collés non autorisés"
+              asset='assets/vkamenu/textures/gui/'
+              panorama=Image.open(io.BytesIO(jar.read(asset+'vka_menu_panorama.png'))).convert('RGB')
+              center=Image.open(io.BytesIO(jar.read(asset+'vka_menu_hd.png'))).convert('RGB')
+              stone=Image.open(io.BytesIO(jar.read(asset+'vka_stone_face.png')))
+              assert panorama.size==(4464,1882),panorama.size
+              assert center.size==(3344,1882),center.size
+              assert stone.size==(1024,192)
+              # Panneau VKA original strictement inchangé au centre.
+              assert ImageChops.difference(
+                  panorama.crop((560+160,0,560+3344-160,1882)),
+                  center.crop((160,0,3344-160,1882))).getbbox() is None
+              assert not any('vka_button_' in n for n in members)
               assert 'fr/studiovanclaude/vka/menu/VkaMenuScreen.class' in members
-          text=Path('src/client/java/fr/studiovanclaude/vka/menu/VkaMenuScreen.java').read_text()
-          assert 'Math.min((float) this.width / DESIGN_W' in text
-          assert 'g.text(this.font,CAPTIONS[index]' in text
-          assert 'drawIcon(g,index' in text
-          assert 'BUTTON_ART' not in text
-          assert 'vka_stone_face.png' in text
-          assert 'stoneWidth = Math.max(1, w - inset*2)' in text, 'Rejet: largeur texture pierre incorrecte'
-          assert 'x+w-inset*2' not in text, 'Rejet: abscisse droite utilisée comme largeur du blit'
-          assert 'h/18.0f' in text, 'Rejet: libellés trop petits'
-          # Vérification géométrique sur les écrans 16:9, 21:9 et 4:3.
-          for gw,gh in [(960,540),(1280,720),(1000,620),(1360,768)]:
-              factor=min(gw/1672,gh/941)
-              ix=(gw-1672*factor)/2
-              for bx,by,bw,bh in [(440,471,770,103),(440,585,770,103),(440,699,770,103)]:
-                  x=round(ix+bx*factor); w=round(bw*factor)
-                  inset=max(3,round(11*factor))+max(1,round(3*factor))
-                  stone_width=max(1,w-2*inset)
-                  assert x+inset+stone_width <= x+w, (gw,gh,x,w,stone_width)
-                  assert x+w <= gw, (gw,gh,'hors champ')
-          for w,h in [(1920,1080),(2560,1080),(1280,1024),(3440,1440)]:
-              scale=min(w/1672,h/941)
-              ox=(w-1672*scale)/2
-              oy=(h-941*scale)/2
-              assert ox>=-1e-6 and oy>=-1e-6, (w,h)
-              assert ox+1672*scale<=w+1e-6 and oy+941*scale<=h+1e-6
-          print('TESTS VKA v5 OK:',file)
+
+          java=Path('src/client/java/fr/studiovanclaude/vka/menu/VkaMenuScreen.java').read_text()
+          assert 'vka_menu_panorama.png' in java
+          assert 'PANORAMA_W = 4464' in java
+          assert 'final int srcWidth=Math.min(PANORAMA_W,requested);' in java
+          assert 'final int sample = 2;' not in java, 'Ancien bug de bandes étirées'
+          assert 'g.text(this.font,CAPTIONS[index]' in java
+          assert 'stoneWidth = Math.max(1, w - inset*2)' in java
+          assert 'SimpleSoundInstance.forUI' in java
+          assert 'BUTTON_ART' not in java
+          for w,h in [(1920,1080),(2560,1080),(3440,1440),(2048,863),(1280,1024)]:
+              scale=h/941
+              requested=round(w/scale*2)
+              source_w=min(4464,requested)
+              source_x=(4464-source_w)//2
+              assert 0<=source_x and source_x+source_w<=4464
+              # Le panneau de titre est dans la zone centrale (400..1250 design).
+              left=(w-1672*scale)/2
+              assert left+400*scale>0 and left+1250*scale<w,(w,h,left)
+              print('OK',w,'x',h,'source',source_x,source_w)
+          print('TESTS DU PANORAMA VKA réussis :',file)
           PY
           sha256sum "$jarfile"
       - uses: actions/upload-artifact@v4
         with:
-          name: VKA-MENU-V5-3D-COMPILATION-TEST
+          name: VKA-MENU-V7-PANORAMA-COMPILATION-TEST
           path: VKA-Minecraft-Menu/build/libs/vka-menu-3d-client-*.jar
           retention-days: 14
           if-no-files-found: error
