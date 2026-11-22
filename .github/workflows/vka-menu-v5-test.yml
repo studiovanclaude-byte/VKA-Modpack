@@ -60,6 +60,19 @@ jobs:
           assert 'drawIcon(g,index' in text
           assert 'BUTTON_ART' not in text
           assert 'vka_stone_face.png' in text
+          assert 'stoneWidth = Math.max(1, w - inset*2)' in text, 'Rejet: largeur texture pierre incorrecte'
+          assert 'x+w-inset*2' not in text, 'Rejet: abscisse droite utilisée comme largeur du blit'
+          assert 'h/18.0f' in text, 'Rejet: libellés trop petits'
+          # Vérification géométrique sur les écrans 16:9, 21:9 et 4:3.
+          for gw,gh in [(960,540),(1280,720),(1000,620),(1360,768)]:
+              factor=min(gw/1672,gh/941)
+              ix=(gw-1672*factor)/2
+              for bx,by,bw,bh in [(440,471,770,103),(440,585,770,103),(440,699,770,103)]:
+                  x=round(ix+bx*factor); w=round(bw*factor)
+                  inset=max(3,round(11*factor))+max(1,round(3*factor))
+                  stone_width=max(1,w-2*inset)
+                  assert x+inset+stone_width <= x+w, (gw,gh,x,w,stone_width)
+                  assert x+w <= gw, (gw,gh,'hors champ')
           for w,h in [(1920,1080),(2560,1080),(1280,1024),(3440,1440)]:
               scale=min(w/1672,h/941)
               ox=(w-1672*scale)/2
