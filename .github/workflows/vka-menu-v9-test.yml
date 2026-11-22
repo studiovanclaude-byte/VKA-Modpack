@@ -1,0 +1,91 @@
+name: VKA Menu v9 - rendu pierre 3D et nettoyage du panneau
+
+on:
+  push:
+    branches: [feature/vka-menu-3d-auto-install]
+    paths:
+      - 'VKA-Minecraft-Menu/**'
+      - '.github/workflows/vka-menu-v9-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: VKA-Minecraft-Menu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.0'
+      - name: Générer le paysage intact et effacer les artefacts de l'ancien menu
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pillow
+          python scripts/prepare_panorama_v9.py --output src/client/resources/assets/vkamenu/textures/gui
+      - name: Générer les 3 vrais boutons 3D et icônes indépendants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/prepare_buttons_v9.py --output src/client/resources/assets/vkamenu/textures/gui
+      - name: Vérifier et compiler contre Minecraft Fabric 26.3
+        shell: bash
+        run: gradle --no-daemon build --stacktrace
+      - name: Vérifier les textures, la transparence, le menu et les textes
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=$(find build/libs -name 'vka-menu-3d-client-*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' | head -n1)
+          test -s "$file"
+          python - "$file" <<'PY'
+          import io,zipfile,sys
+          from PIL import Image
+          from pathlib import Path
+          path=sys.argv[1]
+          with zipfile.ZipFile(path) as z:
+              base='assets/vkamenu/textures/gui/'
+              panorama=Image.open(io.BytesIO(z.read(base+'vka_menu_panorama.png')))
+              assert panorama.size==(4464,1882),panorama.size
+              for state in ('normal','hover','pressed'):
+                  name=base+f'vka_button_{state}.png'
+                  button=Image.open(io.BytesIO(z.read(name))).convert('RGBA')
+                  assert button.size==(1540,206), (state,button.size)
+                  assert button.getpixel((0,0))[3]==0
+                  assert button.getpixel((1539,0))[3]==0
+                  assert button.getpixel((770,90))[3]>240
+              for idx in range(3):
+                  icon=Image.open(io.BytesIO(z.read(base+f'vka_icon_{idx}.png')))
+                  assert icon.size==(128,128)
+              assert 'fr/studiovanclaude/vka/menu/VkaMenuScreen.class' in z.namelist()
+              assert not any('vka_stone_face.png' in n for n in z.namelist())
+          code=Path('src/client/java/fr/studiovanclaude/vka/menu/VkaMenuScreen.java').read_text()
+          assert 'BUTTON_STATES' in code and 'ICONS' in code
+          assert 'SimpleSoundInstance.forUI' in code
+          assert 'g.text(this.font,CAPTIONS[index]' in code
+          assert 'private void drawIcon' not in code
+          assert 'vka_menu_panorama.png' in code
+          assert 'buttonAt(double mouseX,double mouseY)' in code
+          for w,h in [(1920,1080),(2560,1080),(1280,1024),(3440,1440)]:
+              factor=h/941.0
+              x=(w-1672*factor)/2.0
+              for bx,by,bw,bh in ((440,471,770,103),(440,585,770,103),(440,699,770,103)):
+                  assert 0<x+bx*factor<w
+                  assert 0<x+(bx+bw)*factor<w
+          print('Textures et géométrie VKA v9 validées',path)
+          PY
+          sha256sum "$file"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VKA-Menu-v9-3D-TEST
+          path: VKA-Minecraft-Menu/build/libs/vka-menu-3d-client-*.jar
+          retention-days: 14
+          if-no-files-found: error
