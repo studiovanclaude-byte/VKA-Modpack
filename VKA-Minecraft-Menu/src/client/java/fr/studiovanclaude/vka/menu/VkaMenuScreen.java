@@ -22,18 +22,18 @@ import net.minecraft.resources.Identifier;
  *    biseau supérieur, tranche latérale et ombre), avec relief animé.
  * 3. Le libellé est dessiné par le moteur texte Minecraft et non récupéré
  *    dans un rectangle de capture d'écran.
- * 4. Le logo complet reste visible grâce au mode "contain", et les marges
- *    sont prolongées avec des bandes du paysage, pas des barres noires.
+ * 4. L'illustration panoramique est réellement générée sur les côtés, sans
+ *    bandes répétées ni arrière-plan étiré ; le panneau est protégé au centre.
  */
 public final class VkaMenuScreen extends Screen {
     private static final int DESIGN_W = 1672;
     private static final int DESIGN_H = 941;
     private static final int ART_SCALE = 2;
-    private static final int TEX_W = DESIGN_W * ART_SCALE;
-    private static final int TEX_H = DESIGN_H * ART_SCALE;
+    private static final int PANORAMA_W = 4464;
+    private static final int PANORAMA_H = 1882;
     private static final String ADDRESS = "91.197.6.162:24508";
     private static final Identifier SCENE =
-        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_menu_hd.png");
+        Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_menu_panorama.png");
     private static final Identifier STONE =
         Identifier.fromNamespaceAndPath("vkamenu", "textures/gui/vka_stone_face.png");
 
@@ -58,9 +58,11 @@ public final class VkaMenuScreen extends Screen {
     public VkaMenuScreen() { super(Component.literal("VKA Serveur")); }
     public static boolean hasJoinedFromVka() { return joinedFromVka; }
 
-    // Préserver TOUTE l'affiche, y compris le haut du logo.
+    // Mise à l'échelle pilotée par la hauteur : conserve toujours tout le logo
+    // ET utilise davantage de paysage lorsque l'écran s'élargit.
+    // À l'inverse du mode contain + tranches étirées, le décor est continu.
     private float scale() {
-        return Math.min((float) this.width / DESIGN_W, (float) this.height / DESIGN_H);
+        return (float) this.height / DESIGN_H;
     }
     private int ox() { return (this.width - Math.round(DESIGN_W * scale())) / 2; }
     private int oy() { return (this.height - Math.round(DESIGN_H * scale())) / 2; }
@@ -83,27 +85,19 @@ public final class VkaMenuScreen extends Screen {
     }
 
     private void scene(GuiGraphicsExtractor g) {
-        final int left=ox(),top=oy(),w=px(DESIGN_W),h=px(DESIGN_H);
+        // Texture panorama 4464×1882 : image source centrale 3344×1882
+        // conservée exactement, avec du paysage réellement généré à gauche
+        // et à droite. On affiche un rectangle source centré dont la largeur
+        // dépend du ratio de la fenêtre. AUCUN étirement d'une bande de 2 px.
         g.fill(0,0,this.width,this.height,0xFF06100C);
-        // Étirement d'une TRÈS fine bordure du paysage, sans dupliquer
-        // les objets (lanternes, arbres, château) visibles dans les 96 px
-        // précédemment repris de chaque côté de l'image.
-        if(left > 0) {
-            final int sample = 2;
-            g.blit(RenderPipelines.GUI_TEXTURED,SCENE,0,top,0.0f,0.0f,
-                left,h,sample,TEX_H,TEX_W,TEX_H);
-            g.blit(RenderPipelines.GUI_TEXTURED,SCENE,left+w,top,
-                (float)(TEX_W-sample),0.0f,
-                this.width-(left+w),h,sample,TEX_H,TEX_W,TEX_H);
-        }
-        if(top > 0) {
-            final int sample = 2;
-            g.blit(RenderPipelines.GUI_TEXTURED,SCENE,0,0,0.0f,0.0f,
-                this.width,top,TEX_W,sample,TEX_W,TEX_H);
-            g.blit(RenderPipelines.GUI_TEXTURED,SCENE,0,top+h,0.0f,(float)(TEX_H-sample),
-                this.width,this.height-(top+h),TEX_W,sample,TEX_W,TEX_H);
-        }
-        g.blit(RenderPipelines.GUI_TEXTURED,SCENE,left,top,0.0f,0.0f,w,h,TEX_W,TEX_H,TEX_W,TEX_H);
+        final float factor=scale();
+        if(factor<=0)return;
+        final int requested=Math.max(1,Math.round((this.width/factor)*ART_SCALE));
+        final int srcWidth=Math.min(PANORAMA_W,requested);
+        final int sourceX=(PANORAMA_W-srcWidth)/2;
+        g.blit(RenderPipelines.GUI_TEXTURED,SCENE,
+            0,0,(float)sourceX,0.0f,this.width,this.height,
+            srcWidth,PANORAMA_H,PANORAMA_W,PANORAMA_H);
     }
 
     private static int lerpColor(int low,int high,float p) {
