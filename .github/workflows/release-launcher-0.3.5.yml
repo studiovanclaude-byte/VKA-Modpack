@@ -1,0 +1,78 @@
+name: Publication testee VKA Luncher 0.3.5 dans launcher
+
+on:
+  push:
+    branches: [feature/vka-menu-3d-auto-install]
+    paths:
+      - '.github/workflows/release-launcher-0.3.5.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vka-launcher-0.3.5-public
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARCHIVE_URL: 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-81bc-8210-a4c6-68cff295de99/raw?se=2026-11-22T15%3A14%3A30Z&sp=r&sv=2026-06-06&sr=b&scid=55a89b1a-8401-5909-bb0c-13bab59c8fd9&skoid=34268b52-5349-4f34-9be4-e38a5fb9f231&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-22T08%3A29%3A00Z&ske=2026-11-23T08%3A29%3A00Z&sks=b&skv=2026-06-06&sig=OAnPF25vGdWej/bDNL15ScPMT5WNyO72wXOjcXXHrdc%3D'
+      ZIP_SHA: d3185b47e3ceff0f6b2fca40b4b662db838a8379fae1aca72c2daa7782211e73
+      INSTALLER_SHA: 64db0c74ffcdd18492f8f9be9bb8e97479709ef5394140e9091e7c86cd2538fe
+      INSTALLER_SIZE: '120658054'
+      TAG: vka-luncher-v0.3.5
+      ASSET: VKA-Luncher-Setup-0.3.5.exe
+      ZIP_ENTRY: VKA Luncher Setup 0.3.5.exe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger le build Windows 0.3.5 testé
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 --max-time 200 \
+            --silent --show-error "$ARCHIVE_URL" -o /tmp/vka035.zip
+          echo "$ZIP_SHA  /tmp/vka035.zip" | sha256sum -c -
+          mkdir -p dist
+          unzip -p /tmp/vka035.zip "$ZIP_ENTRY" > "dist/$ASSET"
+          test "$(stat -c '%s' "dist/$ASSET")" = "$INSTALLER_SIZE"
+          echo "$INSTALLER_SHA  dist/$ASSET" | sha256sum -c -
+      - name: Créer un brouillon non public, contrôler asset et somme SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100")
+          matched=$(echo "$existing" | jq -c --arg tag "$TAG" '.[] | select(.tag_name==$tag)')
+          if [ -z "$matched" ]; then
+            gh release create "$TAG" "dist/$ASSET" \
+              --repo "$GITHUB_REPOSITORY" --target main --draft \
+              --title 'VKA Luncher 0.3.5 — bannière complète et centrée' \
+              --notes 'VKA Luncher 0.3.5 : correction du recadrage de la bannière. Le logo VKA SERVEUR est entièrement visible sur tous les formats d écrans testés. Rééquilibrage de l accueil sur les écrans peu hauts. Connexion Microsoft, paramètres, lancement Minecraft et vérification des mises à jour conservés. Installateur Windows non signé : Windows SmartScreen peut afficher un avertissement.'
+          fi
+          releases=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100")
+          release=$(echo "$releases" | jq -c --arg tag "$TAG" '.[] | select(.tag_name==$tag)')
+          test -n "$release" || { echo 'Release absente';exit 1; }
+          rid=$(echo "$release" | jq -r .id)
+          asset=$(echo "$release" | jq -c '.assets[]')
+          test "$(echo "$release" | jq -r '.assets|length')" = 1 || exit 1
+          aid=$(echo "$asset" | jq -r .id)
+          test "$(echo "$asset" | jq -r .size)" = "$INSTALLER_SIZE" || { echo 'Size mismatch';exit 1; }
+          test "$(echo "$asset" | jq -r .digest)" = "sha256:$INSTALLER_SHA" || { echo 'SHA mismatch';exit 1; }
+          actual=$(echo "$asset" | jq -r .name)
+          if [ "$actual" != "$ASSET" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/assets/$aid" \
+              -f name="$ASSET" >/dev/null
+          fi
+          verify=$(gh api "repos/$GITHUB_REPOSITORY/releases/$rid")
+          echo "$verify" | jq -e --arg name "$ASSET" --arg sha "sha256:$INSTALLER_SHA" \
+            '.draft==true and .prerelease==false and (.assets|length)==1 and .assets[0].name==$name and .assets[0].digest==$sha' >/dev/null
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$rid" -F draft=false >/dev/null
+          public=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
+          echo "$public" | jq -e --arg name "$ASSET" --arg sha "sha256:$INSTALLER_SHA" --argjson bytes "$INSTALLER_SIZE" \
+            '.draft==false and .prerelease==false and (.assets|length)==1 and .assets[0].name==$name and .assets[0].digest==$sha and .assets[0].size==$bytes' >/dev/null
+          url=$(echo "$public" | jq -r '.assets[0].browser_download_url')
+          test "$url" = "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$ASSET" || exit 1
+          echo "OFFICIAL_RELEASE=$url"
+          echo "SHA256=$INSTALLER_SHA"
