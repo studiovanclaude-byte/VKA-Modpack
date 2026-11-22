@@ -6,6 +6,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -41,6 +43,8 @@ public final class VkaMenuScreen extends Screen {
 
     private static boolean joinedFromVka;
     private int pressed = -1;
+    private int lastHovered = -1;
+    private boolean hoverInitialized = false;
 
     public VkaMenuScreen() { super(Component.literal("VKA Serveur")); }
     public static boolean hasJoinedFromVka() { return joinedFromVka; }
@@ -80,6 +84,13 @@ public final class VkaMenuScreen extends Screen {
             DESIGN_W*RESOLUTION,DESIGN_H*RESOLUTION);
 
         final int hovered=buttonAt(mouseX,mouseY);
+        // Un petit clic sonore à l'entrée sur un bouton, jamais à chaque image.
+        // Lors du premier rendu, ne pas jouer un son si la souris était déjà dessus.
+        if (hoverInitialized && hovered != lastHovered && hovered >= 0 && this.minecraft != null) {
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.35F));
+        }
+        lastHovered = hovered;
+        hoverInitialized = true;
         for (int i=0;i<BUTTONS.length;i++) {
             draw3DButton(graphics,i,i==hovered,i==pressed);
         }
