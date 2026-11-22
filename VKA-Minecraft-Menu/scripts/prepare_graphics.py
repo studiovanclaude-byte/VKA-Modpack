@@ -10,7 +10,7 @@ import zipfile
 from PIL import Image, ImageFilter
 
 BASE = (1672, 941)
-RECTS = ((450, 465, 748, 87), (450, 574, 748, 83), (450, 682, 748, 88))
+RECTS = ((446, 459, 758, 104), (446, 566, 758, 103), (446, 676, 758, 102))
 ART_PATH = "assets/vkamenu/textures/gui/vka_menu.png"
 UP = 2
 
@@ -35,33 +35,28 @@ for idx, (x,y,w,h) in enumerate(RECTS):
     sprite = sprite.filter(ImageFilter.UnsharpMask(radius=1.1, percent=115, threshold=3))
     sprite.save(out/f"vka_button_{idx}.png", optimize=True)
 
-# L'ancienne illustration est plate : ses boutons étaient directement peints
-# dans le décor. On restaure le fond du panneau derrière les boutons pour
-# qu'ils puissent réellement monter / descendre sans doublon visible.
+# L'illustration d'origine intègre les trois anciens boutons avec leurs ombres.
+# Remplacer tout leur bloc par un panneau sombre homogène élimine les restes
+# de bordures qui devenaient visibles pendant le survol des nouveaux boutons.
 background = base.copy()
-pixels = background.load()
 source = base.load()
-from PIL import ImageDraw, ImageFilter
+from PIL import ImageDraw
 
-for x,y,w,h in RECTS:
-    left,right=x-15,x+w+15
-    top,bottom=y-10,y+h+13
-    patch=Image.new("RGB",(right-left,bottom-top))
-    px=patch.load()
-    for yy in range(top,bottom):
-        l=source[x-28, min(BASE[1]-1,max(0,yy))]
-        r=source[x+w+27, min(BASE[1]-1,max(0,yy))]
-        for xx in range(left,right):
-            t=(xx-left)/max(1,right-left-1)
-            # dégradé sombre vert/noir, dans le prolongement du fond original
-            px[xx-left,yy-top]=tuple(int(l[c]*(1-t)+r[c]*t) for c in range(3))
-    # Couper l'ancien bouton puis adoucir les bords pour garder la
-    # continuité de la texture centrale du panneau.
-    mask=Image.new("L",patch.size,0)
-    draw=ImageDraw.Draw(mask)
-    draw.rectangle((8,6,patch.width-9,patch.height-7),fill=255)
-    mask=mask.filter(ImageFilter.GaussianBlur(radius=5))
-    background.paste(patch,(left,top),mask)
+left, top, right, bottom = 429, 441, 1229, 792
+patch = Image.new("RGB", (right-left, bottom-top))
+pp = patch.load()
+for yy in range(top, bottom):
+    # Fond noir-vert réel du panneau, échantillonné à l'extérieur des boutons.
+    l = source[413, yy]
+    r = source[1242, yy]
+    for xx in range(left, right):
+        t = (xx-left) / (right-left-1)
+        pp[xx-left,yy-top] = tuple(round(l[c]*(1-t) + r[c]*t) for c in range(3))
+mask = Image.new("L", patch.size, 0)
+draw = ImageDraw.Draw(mask)
+draw.rectangle((7,7,patch.width-8,patch.height-8),fill=255)
+mask = mask.filter(ImageFilter.GaussianBlur(radius=4))
+background.paste(patch, (left,top), mask)
 
 background = background.resize((BASE[0]*UP,BASE[1]*UP),Image.Resampling.LANCZOS)
 background = background.filter(ImageFilter.UnsharpMask(radius=1.2,percent=130,threshold=3))
