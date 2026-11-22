@@ -85,10 +85,11 @@ public final class VkaMenuScreen extends Screen {
     private void scene(GuiGraphicsExtractor g) {
         final int left=ox(),top=oy(),w=px(DESIGN_W),h=px(DESIGN_H);
         g.fill(0,0,this.width,this.height,0xFF06100C);
-        // Paysage prolongé sur les côtés si l'écran est plus large que 16:9.
-        // On échantillonne UNIQUEMENT les bords, sans refaire apparaître le panneau.
+        // Étirement d'une TRÈS fine bordure du paysage, sans dupliquer
+        // les objets (lanternes, arbres, château) visibles dans les 96 px
+        // précédemment repris de chaque côté de l'image.
         if(left > 0) {
-            final int sample = 192;
+            final int sample = 2;
             g.blit(RenderPipelines.GUI_TEXTURED,SCENE,0,top,0.0f,0.0f,
                 left,h,sample,TEX_H,TEX_W,TEX_H);
             g.blit(RenderPipelines.GUI_TEXTURED,SCENE,left+w,top,
@@ -96,7 +97,7 @@ public final class VkaMenuScreen extends Screen {
                 this.width-(left+w),h,sample,TEX_H,TEX_W,TEX_H);
         }
         if(top > 0) {
-            final int sample = 120;
+            final int sample = 2;
             g.blit(RenderPipelines.GUI_TEXTURED,SCENE,0,0,0.0f,0.0f,
                 this.width,top,TEX_W,sample,TEX_W,TEX_H);
             g.blit(RenderPipelines.GUI_TEXTURED,SCENE,0,top+h,0.0f,(float)(TEX_H-sample),
@@ -182,8 +183,13 @@ public final class VkaMenuScreen extends Screen {
                 lerpColor(0xFF373E3A,0xFF474F48,hover));
             // La pierre de la FACE est une texture de matériau créée pour ce
             // contrôle, pas une capture découpée de l'ancien menu.
+            // IMPORTANT : blit prend une LARGEUR, pas une abscisse droite.
+            // Le précédent x+w-2*inset faisait déborder la pierre très
+            // loin à droite et recouvrait le décor.
+            int stoneWidth = Math.max(1, w - inset*2);
+            int stoneHeight = Math.max(1, cy1 - cy0);
             g.blit(RenderPipelines.GUI_TEXTURED,STONE,
-                x+inset,cy0,0.0f,0.0f,x+w-inset*2,cy1-cy0,
+                x+inset,cy0,0.0f,0.0f,stoneWidth,stoneHeight,
                 1024,192,1024,192);
             g.fill(x+inset,cy0,x+w-inset,cy0+Math.max(1,px(2)),0x554D5A4E);
             int grain=Math.max(1,px(1));
@@ -208,7 +214,9 @@ public final class VkaMenuScreen extends Screen {
 
         // Le vrai texte est rasterisé par Minecraft, toujours net et lié au bouton.
         if(this.minecraft!=null) {
-            float textScale=Math.max(1.0f,Math.min(2.6f,h/31.0f));
+            // Lisibilité : la police était trop petite par rapport à la
+            // hauteur réelle des pierres. Texte centré et taille augmentée.
+            float textScale=Math.max(1.35f,Math.min(4.0f,h/18.0f));
             float centerX=x+w*0.63f;
             float centerY=y+(faceBottom-y)*0.51f;
             g.pose().pushMatrix();
