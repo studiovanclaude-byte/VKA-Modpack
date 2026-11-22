@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.22-test-menu3d.3",
+  "version": "2026.11.22-test-menu3d.4",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -210,10 +210,10 @@
       "sha256": "2cd3cedde12121958bb3fc500b8cca3fecf6b9517287f74f00ab961531a546d8"
     },
     {
-      "path": "mods/VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu3d-hd-v3/VKA-Menu-3D-CLIENT-26.3-HD-3D-v3.jar",
-      "size": 3731996,
-      "sha256": "c1f8f857ef14cc568d2eb0c1dc7676227de3aab4e584236e3b2c73174677428c"
+      "path": "mods/VKA-Menu-3D-CLIENT-26.3-CLEAN-v4.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu3d-clean-v4/VKA-Menu-3D-CLIENT-26.3-CLEAN-v4.jar",
+      "size": 6707870,
+      "sha256": "8fe30c907736ab937fa89a6e5acaa8d59a40bd367bca0d521740fdd69f32db7d"
     }
   ]
 }
