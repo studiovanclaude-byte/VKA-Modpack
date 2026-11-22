@@ -1,0 +1,75 @@
+name: VKA Menu v5 - vrais boutons 3D et cadrage integral
+
+on:
+  push:
+    branches: [feature/vka-menu-3d-auto-install]
+    paths:
+      - 'VKA-Minecraft-Menu/**'
+      - '.github/workflows/vka-menu-v5-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: VKA-Minecraft-Menu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.0'
+      - name: Construire uniquement le décor sans boutons collés
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pillow
+          python scripts/prepare_scene_v5.py \
+            --output src/client/resources/assets/vkamenu/textures/gui
+      - name: Compiler Minecraft 26.3 et Fabric
+        run: gradle --no-daemon build --stacktrace
+      - name: Vérifier cadrage 16:9 21:9 4:3, texte natif et ressources
+        shell: bash
+        run: |
+          set -euo pipefail
+          jarfile=$(find build/libs -maxdepth 1 -name 'vka-menu-3d-client-*.jar' ! -name '*-dev.jar' ! -name '*-sources.jar' | head -1)
+          test -s "$jarfile"
+          python - "$jarfile" <<'PY'
+          import sys, zipfile, io
+          from pathlib import Path
+          from PIL import Image
+          file=sys.argv[1]
+          with zipfile.ZipFile(file) as jar:
+              members=jar.namelist()
+              src='assets/vkamenu/textures/gui/vka_menu_hd.png'
+              assert src in members
+              assert Image.open(io.BytesIO(jar.read(src))).size==(3344,1882)
+              assert not any('vka_button_' in member for member in members), "Sprites collés non autorisés"
+              assert 'fr/studiovanclaude/vka/menu/VkaMenuScreen.class' in members
+          text=Path('src/client/java/fr/studiovanclaude/vka/menu/VkaMenuScreen.java').read_text()
+          assert 'Math.min((float) this.width / DESIGN_W' in text
+          assert 'g.text(this.font,CAPTIONS[index]' in text
+          assert 'drawIcon(g,index' in text
+          assert 'BUTTON_ART' not in text
+          for w,h in [(1920,1080),(2560,1080),(1280,1024),(3440,1440)]:
+              scale=min(w/1672,h/941)
+              ox=(w-1672*scale)/2
+              oy=(h-941*scale)/2
+              assert ox>=-1e-6 and oy>=-1e-6, (w,h)
+              assert ox+1672*scale<=w+1e-6 and oy+941*scale<=h+1e-6
+          print('TESTS VKA v5 OK:',file)
+          PY
+          sha256sum "$jarfile"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VKA-MENU-V5-3D-COMPILATION-TEST
+          path: VKA-Minecraft-Menu/build/libs/vka-menu-3d-client-*.jar
+          retention-days: 14
+          if-no-files-found: error
