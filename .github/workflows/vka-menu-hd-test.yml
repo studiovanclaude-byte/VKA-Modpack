@@ -27,21 +27,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.8.0'
-      - name: Télécharger la ressource VKA actuellement diffusée
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --location --retry 3 --silent --show-error --max-time 120 \
-            'https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-vka-menu3d/VKA-Menu-3D-CLIENT-26.3-TEST-REEL.jar' \
-            --output existing-menu.jar
-          test -s existing-menu.jar
-      - name: Préparer les ressources graphiques HD et 3 boutons séparés
+      - name: Préparer les ressources graphiques nettes et 3 boutons séparés
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check pillow
           python scripts/prepare_graphics.py \
-            --jar existing-menu.jar \
             --output src/client/resources/assets/vkamenu/textures/gui
       - name: Compiler et vérifier contre Minecraft Fabric 26.3
         shell: bash
