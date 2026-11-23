@@ -1,0 +1,46 @@
+name: Publier VKA unifié TEST33.6 + VKA UI RC3
+
+on:
+  push:
+    branches: [publication/ui-rc3]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v2026.11.23-ui-rc3
+      FICHIER: VKA-Unifie-26.3-TEST33.6-UI-RC3.jar
+      SHA256: e70131abf1644aab1f40954fe496cc292a2b108a8c26a169f449af6d4f95c77f
+      TAILLE: '106879667'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recoller et vérifier le jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat publication-ui-rc3/"$FICHIER".part* > "$FICHIER"
+          test "$(stat -c %s "$FICHIER")" = "$TAILLE"
+          echo "$SHA256  $FICHIER" | sha256sum -c -
+      - name: Publier la release (une seule fois)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG déjà publiée."
+          else
+            gh release create "$TAG" "$FICHIER" --target "$GITHUB_SHA" \
+              --title "VKA unifié TEST33.6 + VKA UI RC3 — inventaire VKA" \
+              --notes "Version candidate 3 : RC2 + pack intégré Interface VKA (inventaire joueur bois, or et parchemin ; désactivable dans Packs de ressources) ; serveur inchangé. SHA-256 $SHA256."
+          fi
+      - name: Vérifier le fichier publié
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o verif.jar "https://github.com/${GH_REPO}/releases/download/${TAG}/${FICHIER}"
+          test "$(stat -c %s verif.jar)" = "$TAILLE"
+          echo "$SHA256  verif.jar" | sha256sum -c -
