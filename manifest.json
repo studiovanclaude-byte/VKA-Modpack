@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.23-ui-rc2",
+  "version": "2026.11.23-ui-rc2-casino",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -94,6 +94,12 @@
       "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.19-r2/lithium-fabric-0.26.3_mc26.3.jar",
       "size": 919892,
       "sha256": "103b6aab3932f119155565254a3f33b1be0da26b9bf7a5eec24851542144fc78"
+    },
+    {
+      "path": "mods/minevegas-casino-fabric-26.3-1.1.2.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.23-casino/minevegas-casino-fabric-26.3-1.1.2.jar",
+      "size": 27050235,
+      "sha256": "ae8f73205e628ceb2e0add5bb089215ffe60034e9c864e81b940c55da5dff7d2"
     },
     {
       "path": "mods/mob_explosion_griefing-2.1.2+26.1-26.3.jar",
