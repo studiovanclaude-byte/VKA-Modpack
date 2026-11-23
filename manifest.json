@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.23-ui-rc2-casino",
+  "version": "2026.11.23-ui-rc3-casino",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -192,10 +192,10 @@
       "sha256": "9ddad02bcab1dc940745a0ce0472923f90610e0940f9d8d7775abab6b9ae4f27"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-TEST33.6-UI-RC2.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.23-ui-rc2/VKA-Unifie-26.3-TEST33.6-UI-RC2.jar",
-      "size": 106759831,
-      "sha256": "bb2d85d354aeadfe5fa571ebfa693cbb97ea6c67c6e2d23959971c135de8f176"
+      "path": "mods/VKA-Unifie-26.3-TEST33.6-UI-RC3.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.23-ui-rc3/VKA-Unifie-26.3-TEST33.6-UI-RC3.jar",
+      "size": 106879667,
+      "sha256": "e70131abf1644aab1f40954fe496cc292a2b108a8c26a169f449af6d4f95c77f"
     },
     {
       "path": "mods/voicechat-fabric-2.6.24+26.3.jar",
