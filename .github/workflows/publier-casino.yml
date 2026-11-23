@@ -1,0 +1,46 @@
+name: Publier MineVegas Casino 1.1.2
+
+on:
+  push:
+    branches: [publication/casino]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v2026.11.23-casino
+      FICHIER: minevegas-casino-fabric-26.3-1.1.2.jar
+      SHA256: ae8f73205e628ceb2e0add5bb089215ffe60034e9c864e81b940c55da5dff7d2
+      TAILLE: '27050235'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier le jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp publication-casino/"$FICHIER" "$FICHIER"
+          test "$(stat -c %s "$FICHIER")" = "$TAILLE"
+          echo "$SHA256  $FICHIER" | sha256sum -c -
+      - name: Publier la release (une seule fois)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG déjà publiée."
+          else
+            gh release create "$TAG" "$FICHIER" --target "$GITHUB_SHA" \
+              --title "MineVegas Casino 1.1.2 (Fabric 26.3)" \
+              --notes "Mod tiers non modifié, redistribué tel quel : MineVegas Casino 1.1.2 par byMehd, https://www.curseforge.com/minecraft/mc-mods/minevegas-casino (licence MIT avec condition d attribution, incluse dans le jar ; musiques Kevin MacLeod CC BY 4.0). SHA-256 $SHA256."
+          fi
+      - name: Vérifier le fichier publié
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o verif.jar "https://github.com/${GH_REPO}/releases/download/${TAG}/${FICHIER}"
+          test "$(stat -c %s verif.jar)" = "$TAILLE"
+          echo "$SHA256  verif.jar" | sha256sum -c -
