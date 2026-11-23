@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.22-test33.5",
+  "version": "2026.11.23-test33.6",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -186,10 +186,10 @@
       "sha256": "9ddad02bcab1dc940745a0ce0472923f90610e0940f9d8d7775abab6b9ae4f27"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-TEST33.5-Fortification.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.22-test33.5/VKA-Unifie-26.3-TEST33.5-Fortification.jar",
-      "size": 105428561,
-      "sha256": "c371df29126a1bd470f274d3b387bbd028c4f20fd694ce6db9e10fa426610a81"
+      "path": "mods/VKA-Unifie-26.3-TEST33.6-Fortification-Distance.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.23-test33.6/VKA-Unifie-26.3-TEST33.6-Fortification-Distance.jar",
+      "size": 105433975,
+      "sha256": "bb154e1fdc202b45d633cc934c391b2d3457b0829ce0d5284ea342bba0f30f1f"
     },
     {
       "path": "mods/voicechat-fabric-2.6.24+26.3.jar",
