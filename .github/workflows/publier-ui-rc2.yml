@@ -1,0 +1,46 @@
+name: Publier VKA unifié TEST33.6 + VKA UI RC2
+
+on:
+  push:
+    branches: [publication/ui-rc2]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v2026.11.23-ui-rc2
+      FICHIER: VKA-Unifie-26.3-TEST33.6-UI-RC2.jar
+      SHA256: bb2d85d354aeadfe5fa571ebfa693cbb97ea6c67c6e2d23959971c135de8f176
+      TAILLE: '106759831'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recoller et vérifier le jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat publication-ui-rc2/"$FICHIER".part* > "$FICHIER"
+          test "$(stat -c %s "$FICHIER")" = "$TAILLE"
+          echo "$SHA256  $FICHIER" | sha256sum -c -
+      - name: Publier la release (une seule fois)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG déjà publiée."
+          else
+            gh release create "$TAG" "$FICHIER" --target "$GITHUB_SHA" \
+              --title "VKA unifié TEST33.6 + VKA UI RC2 — interface VKA (dialogues, journal, registre)" \
+              --notes "Version candidate 2 : onglets latéraux animés de l inventaire (quêtes, métiers, guildes, logements, économie, Némésis), cadrage du dialogue Easy NPC corrigé ; serveur inchangé (Némésis 0.2.4-fortif.3). SHA-256 $SHA256."
+          fi
+      - name: Vérifier le fichier publié
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o verif.jar "https://github.com/${GH_REPO}/releases/download/${TAG}/${FICHIER}"
+          test "$(stat -c %s verif.jar)" = "$TAILLE"
+          echo "$SHA256  verif.jar" | sha256sum -c -
