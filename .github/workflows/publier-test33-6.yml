@@ -1,0 +1,46 @@
+name: Publier VKA unifié TEST33.6
+
+on:
+  push:
+    branches: [publication/test33.6]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v2026.11.23-test33.6
+      FICHIER: VKA-Unifie-26.3-TEST33.6-Fortification-Distance.jar
+      SHA256: bb154e1fdc202b45d633cc934c391b2d3457b0829ce0d5284ea342bba0f30f1f
+      TAILLE: '105433975'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recoller et vérifier le jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat publication-test33.6/"$FICHIER".part* > "$FICHIER"
+          test "$(stat -c %s "$FICHIER")" = "$TAILLE"
+          echo "$SHA256  $FICHIER" | sha256sum -c -
+      - name: Publier la release (une seule fois)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG déjà publiée."
+          else
+            gh release create "$TAG" "$FICHIER" --target "$GITHUB_SHA" \
+              --title "VKA unifié TEST33.6 — fortification hors chargement" \
+              --notes "Némésis 0.2.4-fortif.3 : les villages capturés se fortifient même loin des joueurs (chargement temporaire, un village à la fois) ; sauvegarde des fortifications sans aucun fort relisible. SHA-256 $SHA256."
+          fi
+      - name: Vérifier le fichier publié
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o verif.jar "https://github.com/${GH_REPO}/releases/download/${TAG}/${FICHIER}"
+          test "$(stat -c %s verif.jar)" = "$TAILLE"
+          echo "$SHA256  verif.jar" | sha256sum -c -
