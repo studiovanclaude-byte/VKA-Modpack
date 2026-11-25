@@ -1,0 +1,131 @@
+name: VKA Cités — publier un JAR déjà disponible sur GitHub
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag de la release GitHub contenant le nouveau JAR unifié"
+        required: true
+        type: string
+      jar_name:
+        description: "Nom exact du JAR unifié corrigé (client VKA Cités)"
+        required: true
+        type: string
+      expected_sha256:
+        description: "SHA-256 attendu du JAR (64 caractères hexadécimaux)"
+        required: true
+        type: string
+      pack_version:
+        description: "Version du manifeste VKA"
+        required: true
+        type: string
+      channel:
+        description: "Canal du VKA Luncher"
+        required: true
+        default: test
+        type: choice
+        options:
+          - test
+          - production
+      production_confirmation:
+        description: "Pour la production, saisir exactement PUBLIER_EN_PRODUCTION"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vka-modpack-manifest
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le manifeste VKA
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Vérifier les entrées et la release avant toute modification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VKA_REPO: ${{ github.repository }}
+          VKA_TAG: ${{ inputs.release_tag }}
+          VKA_JAR: ${{ inputs.jar_name }}
+          VKA_SHA: ${{ inputs.expected_sha256 }}
+          VKA_VERSION: ${{ inputs.pack_version }}
+          VKA_CHANNEL: ${{ inputs.channel }}
+          VKA_PROD_CONFIRM: ${{ inputs.production_confirmation }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VKA_TAG" =~ ^v[0-9][A-Za-z0-9._-]{0,90}$ ]] || { echo "::error::Tag de release invalide"; exit 1; }
+          [[ "$VKA_JAR" =~ ^VKA-Unifie-26\.3-[A-Za-z0-9._+-]+\.jar$ ]] || { echo "::error::Nom du JAR non reconnu"; exit 1; }
+          [[ "$VKA_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || { echo "::error::Empreinte SHA-256 invalide"; exit 1; }
+          [[ "$VKA_VERSION" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$ ]] || { echo "::error::Version de manifeste invalide"; exit 1; }
+          if [[ "$VKA_CHANNEL" == "production" ]]; then
+            [[ "$VKA_PROD_CONFIRM" == "PUBLIER_EN_PRODUCTION" ]] || { echo "::error::Confirmation de production manquante"; exit 1; }
+            prerelease="$(gh release view "$VKA_TAG" --repo "$VKA_REPO" --json isPrerelease --jq .isPrerelease)"
+            [[ "$prerelease" == "false" ]] || { echo "::error::Une préversion ne peut pas être publiée en production"; exit 1; }
+          fi
+          mkdir -p "$RUNNER_TEMP/vka-jar"
+          gh release download "$VKA_TAG" --repo "$VKA_REPO" --pattern "$VKA_JAR" --dir "$RUNNER_TEMP/vka-jar" --clobber
+          test -s "$RUNNER_TEMP/vka-jar/$VKA_JAR"
+          printf '%s  %s\n' "$VKA_SHA" "$RUNNER_TEMP/vka-jar/$VKA_JAR" | sha256sum --check --status || {
+            echo "::error::SHA-256 différent : publication annulée"; exit 1;
+          }
+          export VKA_SIZE="$(stat --printf='%s' "$RUNNER_TEMP/vka-jar/$VKA_JAR")"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const { VKA_REPO: repo, VKA_TAG: tag, VKA_JAR: jar, VKA_SHA: sha,
+                  VKA_VERSION: version, VKA_CHANNEL: channel, VKA_SIZE: size } = process.env;
+          const source = JSON.parse(fs.readFileSync('manifest.json','utf8'));
+          if (source.schema !== 1 || source.packId !== 'vka' ||
+              source.minecraftVersion !== '26.3' || source.fabricLoaderVersion !== '0.20.1' ||
+              !Array.isArray(source.files)) throw new Error('Manifeste officiel VKA incompatible');
+          const matches = source.files.map((f,i) => ({f,i}))
+            .filter(({f}) => /^mods\/VKA-Unifie-26\.3-.*\.jar$/.test(f.path));
+          if (matches.length !== 1) throw new Error('Le manifeste doit contenir exactement un mod unifié');
+          const index = matches[0].i;
+          source.files[index] = {
+            path: 'mods/'+jar,
+            url: 'https://github.com/'+repo+'/releases/download/'+encodeURIComponent(tag)+'/'+encodeURIComponent(jar),
+            size: Number(size),
+            sha256: sha.toLowerCase()
+          };
+          if (new Set(source.files.map(f=>f.path.toLowerCase())).size !== source.files.length)
+            throw new Error('Doublon de chemin dans le manifeste');
+          source.version = version;
+          const path = channel === 'production' ? 'manifest.json' : 'manifest-cites-test.json';
+          fs.writeFileSync(path, JSON.stringify(source,null,2)+'\n', 'utf8');
+          console.log('Manifeste préparé :',path,'—',jar,Number(size),'octets');
+          NODE
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          target=manifest-cites-test.json
+          [[ "$VKA_CHANNEL" == "production" ]] && target=manifest.json
+          git add -- "$target"
+          if git diff --cached --quiet; then
+            echo "Aucun changement de manifeste."
+          else
+            git commit -m "VKA Cités: promouvoir $VKA_JAR vers $VKA_CHANNEL"
+            git push origin HEAD:main
+          fi
+
+      - name: Résumé de la publication
+        env:
+          VKA_CHANNEL: ${{ inputs.channel }}
+          VKA_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if [[ "$VKA_CHANNEL" == "production" ]]; then
+            echo "Manifeste officiel : https://raw.githubusercontent.com/$VKA_REPO/main/manifest.json" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Manifeste test : https://raw.githubusercontent.com/$VKA_REPO/main/manifest-cites-test.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Le déploiement Mindstrator reste une opération distincte." >> "$GITHUB_STEP_SUMMARY"
