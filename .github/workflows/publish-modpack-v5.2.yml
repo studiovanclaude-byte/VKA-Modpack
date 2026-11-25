@@ -1,0 +1,114 @@
+name: Publish VKA Cites 5.2 with verified client dependencies
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-modpack-v5.2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-vka-modpack-v5-2
+  cancel-in-progress: false
+
+jobs:
+  verify-and-publish:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-modpack-v5.2]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Verify VKA Cites 5.2 assets and publish official manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: studiovanclaude-byte/VKA-Modpack
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN)) { throw 'Jeton de publication VKA-Modpack manquant' }
+          $tag = 'vka-cites-client-2026.11.25-v5-2-preview'
+          $clientName = 'VKA-Unifie-26.3-TEST33.6-UI-CITES-V5-2-PREVIEW.jar'
+          $clientSha = '135b15273d2eff04d0e7af261309cfa5315b8375b9c05609cc2d044c84b240e4'
+          $clientSize = [long]108517717
+          $release = (& gh api "repos/$env:GH_REPO/releases/tags/$tag" | Out-String | ConvertFrom-Json)
+          if ($LASTEXITCODE -ne 0 -or $release.draft) { throw 'Release V5.2 absente ou non publiee' }
+          $asset = @($release.assets | Where-Object { $_.name -eq $clientName -and $_.state -eq 'uploaded' })
+          if ($asset.Count -ne 1) { throw 'JAR client V5.2 absent ou ambigu' }
+          if ($asset[0].size -ne $clientSize -or $asset[0].digest -ne "sha256:$clientSha") { throw 'JAR client V5.2 incorrect' }
+          $clientUrl = [string]$asset[0].browser_download_url
+          if ($clientUrl -ne "https://github.com/$env:GH_REPO/releases/download/$tag/$clientName") { throw 'URL du JAR client inattendue' }
+
+          $deps = @(
+            @{ project='litematica'; id='ZqV316KY'; number='0.29.1'; name='litematica-fabric-26.3-0.29.1.jar' },
+            @{ project='malilib'; id='JX9bESec'; number='0.30.2'; name='malilib-fabric-26.3-0.30.2.jar' }
+          )
+          $entries = @()
+          foreach ($dep in $deps) {
+            $uri = "https://api.modrinth.com/v2/version/$($dep.id)"
+            $v = Invoke-RestMethod -Uri $uri -Headers @{'User-Agent'='StudioVanClaude-VKA/1.0'} -TimeoutSec 30
+            if ($v.version_number -ne $dep.number -or $v.project_id -eq $null -or
+                @($v.game_versions) -notcontains '26.3' -or @($v.loaders) -notcontains 'fabric') {
+              throw "Version officielle incorrecte: $($dep.project)"
+            }
+            $files = @($v.files | Where-Object { $_.filename -eq $dep.name })
+            if ($files.Count -ne 1) { throw "Fichier Modrinth absent/ambigu: $($dep.name)" }
+            $f = $files[0]
+            $u = [Uri]$f.url
+            if ($u.Scheme -ne 'https' -or $u.Host -ne 'cdn.modrinth.com') { throw 'CDN Modrinth non officiel' }
+            $expectedSha512 = [string]$f.hashes.sha512
+            if ($expectedSha512 -notmatch '^[0-9a-f]{128}$') { throw 'SHA-512 Modrinth incorrect' }
+            $file = Join-Path $env:RUNNER_TEMP $dep.name
+            Invoke-WebRequest -Uri $f.url -OutFile $file -TimeoutSec 180
+            $actualSha512 = (Get-FileHash $file -Algorithm SHA512).Hash.ToLowerInvariant()
+            if ($actualSha512 -ne $expectedSha512) { throw "SHA-512 different: $($dep.name)" }
+            $actualSize = [long](Get-Item $file).Length
+            if ($actualSize -ne [long]$f.size) { throw "Taille differente: $($dep.name)" }
+            $sha256 = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            $entries += [pscustomobject]@{path="mods/$($dep.name)";url=[string]$f.url;size=$actualSize;sha256=$sha256}
+            Write-Host "Verified $($dep.name), size=$actualSize, SHA256=$sha256"
+          }
+
+          $meta = (& gh api "repos/$env:GH_REPO/contents/manifest.json" | Out-String | ConvertFrom-Json)
+          if ($LASTEXITCODE -ne 0) { throw 'Impossible de lire le manifeste officiel' }
+          $json = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($meta.content -replace '\s','')))
+          $pack = $json | ConvertFrom-Json
+          $targetVersion = '2026.11.25-cites-v5.2-preview'
+          if ($pack.version -eq $targetVersion) {
+            $publishedFiles=@($pack.files)
+            if ($publishedFiles.Count -ne 38) { throw 'Manifeste V5.2 existant incomplet' }
+            foreach ($entry in $entries) {
+              $match=@($publishedFiles | Where-Object { $_.path -eq $entry.path -and $_.sha256 -eq $entry.sha256 -and $_.size -eq $entry.size })
+              if ($match.Count -ne 1) { throw "Dependance deja publiee incoherente : $($entry.path)" }
+            }
+            Write-Host 'Manifeste V5.2 officiel deja publie et dependances verifiees'
+            exit 0
+          }
+          if ($pack.version -ne '2026.11.25-cites-v5.1-terrain' -or @($pack.files).Count -ne 36) {
+            throw "Base officielle inattendue : $($pack.version)"
+          }
+          $old = @($pack.files | Where-Object { $_.path -match '^mods/VKA-Unifie-26\.3-' })
+          if ($old.Count -ne 1) { throw 'JAR VKA precedent ambigu' }
+          $pack.files = @($pack.files | Where-Object { $_.path -ne $old[0].path })
+          $pack.files += [pscustomobject]@{path="mods/$clientName";url=$clientUrl;size=$clientSize;sha256=$clientSha}
+          foreach ($entry in $entries) { $pack.files += $entry }
+          $pack.version = $targetVersion
+          if (@($pack.files).Count -ne 38) { throw 'Le manifeste final ne contient pas 38 fichiers' }
+          $paths = @($pack.files | ForEach-Object { $_.path.ToLowerInvariant() })
+          if (@($paths | Select-Object -Unique).Count -ne 38) { throw 'Doublon de fichier dans le manifeste' }
+          $payloadJson = ConvertTo-Json -InputObject $pack -Depth 15 -Compress
+          $payload = @{
+            message = 'VKA Cites 5.2 : client et Litematica/MaLiLib avec SHA-256 verifies'
+            branch = 'main'
+            sha = [string]$meta.sha
+            content = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($payloadJson))
+          } | ConvertTo-Json -Compress
+          $payload | & gh api -X PUT "repos/$env:GH_REPO/contents/manifest.json" --input -
+          if ($LASTEXITCODE -ne 0) { throw 'Echec publication manifeste officiel' }
+          $check = (& gh api "repos/$env:GH_REPO/contents/manifest.json" | Out-String | ConvertFrom-Json)
+          $checkJson = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($check.content -replace '\s','')))
+          $published = $checkJson | ConvertFrom-Json
+          if ($published.version -ne $targetVersion -or @($published.files).Count -ne 38) { throw 'Publication non verifiee' }
+          Write-Host "OFFICIAL_MANIFEST_UPDATED: $targetVersion ; 38 files ; V5.2 + 2 official dependencies"
