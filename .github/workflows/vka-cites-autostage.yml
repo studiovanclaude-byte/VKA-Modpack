@@ -1,0 +1,109 @@
+name: VKA Cités — préparer automatiquement le manifeste de test
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vka-modpack-manifest
+  cancel-in-progress: false
+
+jobs:
+  stage-client:
+    if: startsWith(github.event.release.tag_name, 'vka-cites-client-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lire le manifeste existant
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Vérifier la release et préparer le manifeste TEST
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^vka-cites-client-[a-zA-Z0-9._-]{1,64}$ ]] || exit 1
+          mapfile -t assets < <(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name' | grep -E '^VKA-Unifie-26[.]3-[A-Za-z0-9._+-]+[.]jar$' || true)
+          if [[ ${#assets[@]} -ne 1 ]]; then
+            echo "::error::La release doit contenir exactement un JAR client unifié VKA"
+            exit 1
+          fi
+          file="${assets[0]}"
+          mkdir -p "$RUNNER_TEMP/vka-client"
+          gh release download "$TAG" --repo "$REPO" --pattern "$file" --dir "$RUNNER_TEMP/vka-client"
+          jar="$RUNNER_TEMP/vka-client/$file"
+          test -s "$jar"
+          export VKA_SHA="$(sha256sum "$jar" | awk '{print $1}')"
+          export VKA_SIZE="$(stat -c%s "$jar")"
+          export VKA_FILE="$file"
+          export VKA_TAG="$TAG"
+          export VKA_REPO="$REPO"
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          from zipfile import ZipFile
+          source = json.loads(Path('manifest.json').read_text('utf-8'))
+          if (source.get('schema'), source.get('packId'), source.get('minecraftVersion'), source.get('fabricLoaderVersion')) != (1,'vka','26.3','0.20.1'):
+              raise SystemExit('Format du manifeste officiel incompatible')
+          files = source.get('files')
+          if not isinstance(files,list): raise SystemExit('Liste des fichiers invalide')
+          matches = [i for i,v in enumerate(files) if re.fullmatch(r'mods/VKA-Unifie-26\.3-[^/]+\.jar', v.get('path',''))]
+          if len(matches) != 1: raise SystemExit('Un seul JAR unifié attendu dans le manifeste')
+          name = os.environ['VKA_FILE']
+          jar = Path(os.environ['RUNNER_TEMP'])/'vka-client'/name
+          with ZipFile(jar) as z:
+              names = set(z.namelist())
+              if 'fabric.mod.json' not in names: raise SystemExit('JAR Fabric invalide')
+              metadata=json.loads(z.read('fabric.mod.json'))
+              if metadata.get('id') != 'openpartiesandclaims':
+                  raise SystemExit('Le JAR n’est pas le mod unifié attendu')
+              # Ne jamais promouvoir un jar n’embarquant pas le nouveau client Cités.
+              client_path='META-INF/jars/vka-nemesis-client-0.2.4-fortif.2.jar'
+              if client_path not in names: raise SystemExit('Client imbriqué absent')
+              import io
+              with ZipFile(io.BytesIO(z.read(client_path))) as client:
+                  client_meta=json.loads(client.read('fabric.mod.json'))
+                  if client_meta.get('id')!='vka_nemesis_client':raise SystemExit('Identité client inattendue')
+                  nested=client_meta.get('jars',[])
+                  targets=[v.get('file','') for v in nested]
+                  if not any('vka-cites' in p for p in targets):raise SystemExit('vka_cites absent du client')
+                  if not any('vka-ui' in p for p in targets):raise SystemExit('vka_ui absent du client')
+          release_tag=os.environ['VKA_TAG']
+          files[matches[0]]={
+             'path':'mods/'+name,
+             'url':'https://github.com/'+os.environ['VKA_REPO']+'/releases/download/'+release_tag+'/'+name,
+             'size':int(os.environ['VKA_SIZE']),
+             'sha256':os.environ['VKA_SHA']
+          }
+          source['version']='2026.11.25-cites-'+release_tag.removeprefix('vka-cites-client-')
+          if len({x['path'].lower() for x in files}) != len(files):raise SystemExit('Chemins en doublon')
+          Path('manifest-cites-test.json').write_text(json.dumps(source,ensure_ascii=False,indent=2)+'\n','utf-8')
+          print('Client vérifié:',name,'SHA256:',os.environ['VKA_SHA'])
+          PY
+
+      - name: Enregistrer le manifeste de test
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest-cites-test.json
+          if ! git diff --cached --quiet; then
+            git commit -m "VKA Cités: mettre en test le client depuis la release"
+            git push origin HEAD:main
+          fi
+
+      - name: Résumé
+        shell: bash
+        run: |
+          echo "Manifeste de test : https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/manifest-cites-test.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "Le manifeste officiel n'a pas été modifié." >> "$GITHUB_STEP_SUMMARY"
