@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.25-cites-2026.11.25-v4",
+  "version": "2026.11.25-cites-2026.11.25-v5-terrain",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -192,10 +192,10 @@
       "sha256": "9ddad02bcab1dc940745a0ce0472923f90610e0940f9d8d7775abab6b9ae4f27"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-TEST33.6-UI-CITES-V4.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/vka-cites-client-2026.11.25-v4/VKA-Unifie-26.3-TEST33.6-UI-CITES-V4.jar",
-      "size": 108423514,
-      "sha256": "2f8183cdd2ef2797818228b7857b25ab3dfbe023899aae5bf4c8d244a446b9ed"
+      "path": "mods/VKA-Unifie-26.3-TEST33.6-UI-CITES-V5-TERRAIN.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/vka-cites-client-2026.11.25-v5-terrain/VKA-Unifie-26.3-TEST33.6-UI-CITES-V5-TERRAIN.jar",
+      "size": 108437366,
+      "sha256": "6a08b4be5f826dd971b0957e6f8f647d1dabae6ec2b5fe0e650017bf93562af9"
     },
     {
       "path": "mods/voicechat-fabric-2.6.24+26.3.jar",
