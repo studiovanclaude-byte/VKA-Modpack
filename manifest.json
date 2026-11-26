@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.25-cites-5.2.3-work1",
+  "version": "2026.11.26-fix9-compagnons-test4",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -216,10 +216,10 @@
       "sha256": "6258c945f52e05eb86dd460b59b8f0cb995e4badbca52a759935f18b5234119e"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-CITES-5.2.3-WORK1.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/vka-cites-2026.11.25-5.2.3-work1/VKA-Unifie-26.3-CITES-5.2.3-WORK1.jar",
-      "size": 108957458,
-      "sha256": "06d6c4433a6fdddf67f421178f2aa2bdbcd262984f025b3d6efd35a6d4f53594"
+      "path": "mods/VKA-Unifie-26.3-CITES-FIX9-FUSION-20261126.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/VKA-Unifie-26.3-CITES-FIX9-FUSION-20261126.jar",
+      "size": 108960094,
+      "sha256": "db7458070e394f37c1d078a862c2ea076c5a972d86768d72441acdee646fdb40"
     },
     {
       "path": "mods/litematica-fabric-26.3-0.29.1.jar",
@@ -232,6 +232,24 @@
       "url": "https://cdn.modrinth.com/data/GcWjdA9I/versions/JX9bESec/malilib-fabric-26.3-0.30.2.jar",
       "size": 2081094,
       "sha256": "abd59f642abd891586bfec2cd1937771ded925081ebe3870d152ca96356b5119"
+    },
+    {
+      "path": "mods/fantasy-2.3.3-26.3-fabric.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/fantasy-2.3.3-26.3-fabric.jar",
+      "size": 6934789,
+      "sha256": "f40aa9b5f39ef48769bfa8a54161b9a7133572452276049081d17e930c748d81"
+    },
+    {
+      "path": "mods/pet-companions-1.2.3.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/pet-companions-1.2.3.jar",
+      "size": 9075982,
+      "sha256": "d394a5423c70f0d60bf97382e3e30094b2437804c1e602fe18e8ad9510e5ec99"
+    },
+    {
+      "path": "mods/VKA-Compagnons-Montures-0.11.0-test.4-fix9.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/vka-companions-prototype-0.11.0-test.4-fix9.jar",
+      "size": 286860,
+      "sha256": "007654ba59f69c90d0fe4c1d0388837b6658f991955508c9fa0aa6e1fde42e2e"
     }
   ]
 }
