@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.26-fix9-compagnons-test4",
+  "version": "2026.11.27-fix9-reunifie-test5",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -216,10 +216,10 @@
       "sha256": "6258c945f52e05eb86dd460b59b8f0cb995e4badbca52a759935f18b5234119e"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-CITES-FIX9-FUSION-20261126.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/VKA-Unifie-26.3-CITES-FIX9-FUSION-20261126.jar",
-      "size": 108960094,
-      "sha256": "db7458070e394f37c1d078a862c2ea076c5a972d86768d72441acdee646fdb40"
+      "path": "mods/VKA-Unifie-26.3-FIX9-COMPAGNONS-20261127.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.27-fix9-reunifie/VKA-Unifie-26.3-FIX9-COMPAGNONS-20261127.jar",
+      "size": 108858771,
+      "sha256": "d4704eccc1107dc9661da3ba18582d3900d2da8581c1bd2f0a0260a0844d616e"
     },
     {
       "path": "mods/litematica-fabric-26.3-0.29.1.jar",
@@ -244,12 +244,6 @@
       "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/pet-companions-1.2.3.jar",
       "size": 9075982,
       "sha256": "d394a5423c70f0d60bf97382e3e30094b2437804c1e602fe18e8ad9510e5ec99"
-    },
-    {
-      "path": "mods/VKA-Compagnons-Montures-0.11.0-test.4-fix9.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.26-fix9-compagnons/vka-companions-prototype-0.11.0-test.4-fix9.jar",
-      "size": 286860,
-      "sha256": "007654ba59f69c90d0fe4c1d0388837b6658f991955508c9fa0aa6e1fde42e2e"
     }
   ]
 }
