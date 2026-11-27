@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.27-fix9-professeur-test2",
+  "version": "2026.11.27-fix9-recherches-test3",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -216,10 +216,10 @@
       "sha256": "6258c945f52e05eb86dd460b59b8f0cb995e4badbca52a759935f18b5234119e"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-FIX9-COMPAGNONS-PROFESSEUR-20261127.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.27-fix9-professeur/VKA-Unifie-26.3-FIX9-COMPAGNONS-PROFESSEUR-20261127.jar",
-      "size": 108906160,
-      "sha256": "0208f4f5e73e311714a6e70fd1b26b288fd4799d81dd4f399fe80487ca7623da"
+      "path": "mods/VKA-Unifie-26.3-FIX9-COMPAGNONS-RECHERCHES-20261127.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.27-fix9-recherches/VKA-Unifie-26.3-FIX9-COMPAGNONS-RECHERCHES-20261127.jar",
+      "size": 108910946,
+      "sha256": "3f852be72b3b5503714ea7b28e62ba56b48bb678f0a33e680d11b8c377059ce7"
     },
     {
       "path": "mods/litematica-fabric-26.3-0.29.1.jar",
