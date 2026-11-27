@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/studiovanclaude-byte/VKA-Modpack/blob/develop/vka-armees-contrat-mvp-20261127/docs/vka-armees-state.schema.json",
+  "title": "VKA Armees - Snapshot de reference (MVP)",
+  "description": "Contrat de données proposé uniquement ; ne correspond pas encore à une sauvegarde utilisée par VKA Cités.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "cityId",
+    "ownerId",
+    "revision",
+    "soldiers",
+    "campaigns"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "cityId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "ownerId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "soldiers": {
+      "type": "array",
+      "maxItems": 25,
+      "uniqueItems": true,
+      "description": "Soldats actifs uniquement ; les morts figurent dans casualties, sans compter dans le quota.",
+      "items": {
+        "$ref": "#/$defs/soldier"
+      }
+    },
+    "casualties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/casualty"
+      }
+    },
+    "campaigns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/campaign"
+      }
+    }
+  },
+  "$defs": {
+    "soldier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "soldierId",
+        "status",
+        "rank",
+        "equipment",
+        "identity"
+      ],
+      "properties": {
+        "soldierId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "RECRUITED",
+            "TRAINING",
+            "READY",
+            "DEPLOYED",
+            "WOUNDED"
+          ]
+        },
+        "rank": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "skinRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 512
+            }
+          }
+        },
+        "equipment": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+:[a-z0-9_./-]+$"
+          },
+          "uniqueItems": true
+        },
+        "worldEntityId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        }
+      }
+    },
+    "casualty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "soldierId",
+        "cause",
+        "recordedTick"
+      ],
+      "properties": {
+        "soldierId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cause": {
+          "type": "string",
+          "enum": [
+            "FALLEN",
+            "RETIRED",
+            "DISBANDED"
+          ]
+        },
+        "recordedTick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "campaign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "campaignId",
+        "status",
+        "durationDays",
+        "soldierIds",
+        "provisions",
+        "orderToken"
+      ],
+      "properties": {
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PREPARED",
+            "DEPLOYED",
+            "RETURNING",
+            "COMPLETED",
+            "ABORTED"
+          ]
+        },
+        "durationDays": {
+          "type": "integer",
+          "enum": [
+            1,
+            3,
+            7
+          ]
+        },
+        "soldierIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "provisions": {
+          "$ref": "#/$defs/provisions"
+        },
+        "orderToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "startedTick": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "returnedTick": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "provisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "foodUnits",
+        "waterUnits",
+        "payUnits"
+      ],
+      "properties": {
+        "foodUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "waterUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payUnits": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
