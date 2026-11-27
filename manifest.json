@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "packId": "vka",
-  "version": "2026.11.27-fix9-reunifie-test5",
+  "version": "2026.11.27-fix9-pnj-publics-test1",
   "minecraftVersion": "26.3",
   "fabricLoaderVersion": "0.20.1",
   "files": [
@@ -216,10 +216,10 @@
       "sha256": "6258c945f52e05eb86dd460b59b8f0cb995e4badbca52a759935f18b5234119e"
     },
     {
-      "path": "mods/VKA-Unifie-26.3-FIX9-COMPAGNONS-20261127.jar",
-      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.27-fix9-reunifie/VKA-Unifie-26.3-FIX9-COMPAGNONS-20261127.jar",
-      "size": 108858771,
-      "sha256": "d4704eccc1107dc9661da3ba18582d3900d2da8581c1bd2f0a0260a0844d616e"
+      "path": "mods/VKA-Unifie-26.3-FIX9-COMPAGNONS-PNJ-20261127.jar",
+      "url": "https://github.com/studiovanclaude-byte/VKA-Modpack/releases/download/v2026.11.27-fix9-pnj-publics/VKA-Unifie-26.3-FIX9-COMPAGNONS-PNJ-20261127.jar",
+      "size": 108890878,
+      "sha256": "3e730bf2c6f59a2171f0d56b05783853bea97b4228ef0e2d89396c3345d7d6f5"
     },
     {
       "path": "mods/litematica-fabric-26.3-0.29.1.jar",
